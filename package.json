@@ -1,0 +1,33 @@
+{
+  "name": "novo-ui",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xdev1/novo-ui.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/xdev1/novo-ui/issues"
+  },
+  "homepage": "https://github.com/xdev1/novo-ui#readme",
+  "devDependencies": {
+    "@babel/core": "^7.18.10",
+    "@storybook/addon-actions": "^6.5.10",
+    "@storybook/addon-essentials": "^6.5.10",
+    "@storybook/addon-interactions": "^6.5.10",
+    "@storybook/addon-links": "^6.5.10",
+    "@storybook/builder-vite": "^0.2.2",
+    "@storybook/html": "^6.5.10",
+    "@storybook/testing-library": "^0.0.13",
+    "babel-loader": "^8.2.5",
+    "vite": "^3.0.8"
+  },
+  "dependencies": {}
+}
