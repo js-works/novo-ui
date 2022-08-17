@@ -2,8 +2,8 @@ import { patch } from "./lib/superfine-patched";
 
 // === exports =======================================================
 
-export { widget };
-export type { VNode, Widget };
+export { opt, props, render, req, widget };
+export type { Props, VNode, Widget };
 
 // === exported types ================================================
 
@@ -23,24 +23,95 @@ type WidgetCtrl = {
   beforeUnmount: (task: () => void) => void;
 };
 
+// === local types ===================================================
+
+type InitFunc<P extends Props = Props> = (props: P) => () => VNode;
+type PropDefReq<T> = { required: true };
+type PropDefOpt<T> = { required: false; defaultValue: never };
+type PropDefVal<T> = { required: false; defaultValue: T };
+type PropDef<T> = PropDefReq<T> | PropDefOpt<T> | PropDefVal<T>;
+type PropsDef = Record<string, PropDef<unknown>>;
+type Prettify<T extends {}> = { [K in keyof T]: T[K] };
+
+type PropsType<T extends PropsDef> = Prettify<
+  {
+    [K in keyof T as T[K] extends PropDefReq<any>
+      ? K
+      : never]: T[K] extends PropDefReq<infer U> ? U : never;
+  } &
+    {
+      [K in keyof T as T[K] extends PropDefOpt<any>
+        ? K
+        : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
+    } &
+    {
+      [K in keyof T as T[K] extends PropDefVal<any>
+        ? K
+        : never]?: T[K] extends PropDefVal<infer U> ? U : never;
+    }
+>;
+
+type PropsType2<T extends PropsDef> = Prettify<
+  {
+    [K in keyof T as T[K] extends PropDefReq<any>
+      ? K
+      : never]: T[K] extends PropDefReq<infer U> ? U : never;
+  } &
+    {
+      [K in keyof T as T[K] extends PropDefOpt<any>
+        ? K
+        : never]: T[K] extends PropDefOpt<infer U> ? U : never;
+    } &
+    {
+      [K in keyof T as T[K] extends PropDefVal<any>
+        ? K
+        : never]?: T[K] extends PropDefVal<infer U> ? U : never;
+    }
+>;
+
+type DefaultsType<T extends PropsDef> = {
+  [K in keyof T as T[K] extends PropDefVal<any>
+    ? K
+    : never]: T[K] extends PropDefVal<infer U> ? U : never;
+};
+
+// === local data ====================================================
+
+const emptyObj = {};
+const optDef = Object.freeze({ required: false });
+const reqDef = Object.freeze({ required: true });
+
 // === exported functions ============================================
 
-function widget(tagName: string, main: () => () => VNode): Widget;
+function widget(tagName: string, init: InitFunc<{}>): Widget;
 
-function widget(tagName: string, a1?: any): Widget<Props> {
-  const widgetClass = class Widget extends BaseWidget {
-    static tagName = tagName;
+function widget<T extends PropsDef>(
+  tagName: string,
+  propsConfig: T
+): (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
 
-    constructor() {
-      let ctrl!: WidgetCtrl;
+function widget<T extends PropsDef>(
+  tagName: string
+): <T extends PropsDef>(
+  propsConfig: T,
+  ...modifiers: ((elem: HTMLElement) => void)[] // TODO!!!
+) => (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
 
-      super(a1, (c) => (ctrl = c));
-    }
+function widget(tagName: string, arg?: any): any {
+  if (arg === undefined) {
+    return (propsDef: PropsDef) => (init: InitFunc) =>
+      defineWidget(tagName, propsDef, init);
+  }
+
+  if (typeof arg === "function") {
+    return defineWidget(tagName, emptyObj, arg);
+  }
+
+  const propsDef: PropsDef = arg && typeof arg === "object" ? arg : emptyObj;
+
+  return (init: InitFunc) => {
+    return defineWidget(tagName, propsDef, init);
   };
-
-  registerWidget(widgetClass, tagName);
-
-  return widgetClass;
 }
 
 function render(what: VNode, where: string | HTMLElement) {
@@ -59,7 +130,42 @@ function render(what: VNode, where: string | HTMLElement) {
   patch(what, target);
 }
 
+function props<T extends PropsDef>(propsDef: T): T {
+  return propsDef;
+}
+
+function req<T>(): PropDefReq<T> {
+  return reqDef;
+}
+
+function opt<T>(): PropDefOpt<T>;
+function opt<T>(defaultValue?: T): PropDefVal<T>;
+
+function opt(defaultValue?: any): any {
+  return arguments.length > 0 ? { required: false, defaultValue } : optDef;
+}
+
 // === locals ========================================================
+
+function defineWidget(
+  tagName: string,
+  propsDef: PropsDef | null,
+  init: InitFunc
+): Widget {
+  const widgetClass = class Widget extends BaseWidget {
+    static tagName = tagName;
+
+    constructor() {
+      let ctrl!: WidgetCtrl;
+
+      super(propsDef || emptyObj, init, (c) => (ctrl = c));
+    }
+  };
+
+  registerWidget(widgetClass, tagName);
+
+  return widgetClass;
+}
 
 // --- helpers -------------------------------------------------------
 
@@ -77,6 +183,10 @@ function registerWidget(widgetClass: Widget, tagName: string) {
   customElements.define(tagName, widgetClass);
 }
 
+function hasOwn(subj: any, propName: string) {
+  return subj != null && Object.prototype.hasOwnProperty.call(subj, propName);
+}
+
 function setProp(subj: any, name: string, value: any): void {
   const type = typeof subj;
 
@@ -91,6 +201,18 @@ function setName(subj: any, name: string) {
   setProp(subj, "name", name);
 }
 
+function getDefaultProps(propsDef: PropsDef): Props {
+  const ret: Props = {};
+
+  for (const key of Object.keys(propsDef)) {
+    if (hasOwn(propsDef[key], "defaultValue")) {
+      ret[key] = (propsDef[key] as any).defaultValue;
+    }
+  }
+
+  return ret;
+}
+
 // --- BaseWidget ----------------------------------------------------
 
 class BaseWidget extends HTMLElement {
@@ -99,7 +221,7 @@ class BaseWidget extends HTMLElement {
   #stylesElem: HTMLSpanElement;
   #contentElem: HTMLSpanElement;
   #ctrl: WidgetCtrl;
-  #main: (props: Props) => () => VNode;
+  #init: (props: Props) => () => VNode;
   #render: (() => VNode) | null = null;
 
   #lifecycle = {
@@ -112,12 +234,13 @@ class BaseWidget extends HTMLElement {
   #update = () => {};
 
   constructor(
-    main: (props: Props) => () => VNode,
+    propsDef: PropsDef,
+    init: InitFunc<Props>,
     passCtrl: (ctrl: WidgetCtrl) => void
   ) {
     super();
 
-    this.#main = main;
+    this.#init = init;
 
     this.#ctrl = {
       update: () => {
