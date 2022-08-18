@@ -1,4 +1,4 @@
-import { h } from "novo-ui";
+import { createElement } from "novo-ui";
 
 // === exports =======================================================
 
@@ -24,5 +24,7 @@ function jsx(type: any, props: any, key: any) {
     delete props.key;
   }
 
-  return children ? h(type, props, children) : h(type, props);
+  return children
+    ? createElement(type, props, children)
+    : createElement(type, props);
 }

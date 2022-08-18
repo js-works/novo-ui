@@ -1,4 +1,4 @@
 import htm from "htm";
-import { h } from "novo-ui";
+import { createElement } from "novo-ui";
 
-export const html = htm.bind(h);
+export const html = htm.bind(createElement);

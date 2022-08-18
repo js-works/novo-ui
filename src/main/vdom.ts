@@ -1,3 +1,4 @@
+/* This is a patched version of superfine */
 // @ts-nocheck
 /* eslint-disable */
 

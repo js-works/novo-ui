@@ -1,15 +1,27 @@
-import { h, patch, text } from "./lib/superfine-patched";
-import { html } from "./html";
+import { h, patch, text } from './vdom';
 
 // === exports =======================================================
 
-export { createElement as h, opt, props, render, req, widget };
-export type { Props, VNode, Widget };
+export {
+  createElement,
+  createRef,
+  intercept,
+  opt,
+  props,
+  render,
+  req,
+  use,
+  widget
+};
+export type { Props, Ref, RefCallback, RefObject, VNode, Widget, WidgetCtrl };
 
 // === exported types ================================================
 
 type Props = Record<string, any>;
 type VNode = any; // TODO!!!
+type RefObject<T> = { value: T | null };
+type RefCallback<T> = (value: T | null) => void;
+type Ref<T> = RefObject<T> | RefCallback<T>;
 
 type Widget<P extends Props = {}> = {
   new (): HTMLElement & P;
@@ -17,6 +29,7 @@ type Widget<P extends Props = {}> = {
 };
 
 type WidgetCtrl = {
+  getElement(): HTMLElement;
   update(): void;
   afterMount: (task: () => void) => void;
   beforeUpdate: (task: () => void) => void;
@@ -61,28 +74,72 @@ type PropsType2<T extends PropsDef> = Prettify<
     {
       [K in keyof T as T[K] extends PropDefOpt<any>
         ? K
-        : never]: T[K] extends PropDefOpt<infer U> ? U : never;
+        : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
     } &
     {
       [K in keyof T as T[K] extends PropDefVal<any>
         ? K
-        : never]?: T[K] extends PropDefVal<infer U> ? U : never;
+        : never]: T[K] extends PropDefVal<infer U> ? U : never;
     }
 >;
-
-type DefaultsType<T extends PropsDef> = {
-  [K in keyof T as T[K] extends PropDefVal<any>
-    ? K
-    : never]: T[K] extends PropDefVal<infer U> ? U : never;
-};
 
 // === local data ====================================================
 
 const emptyObj = {};
+const noop = () => {};
 const optDef = Object.freeze({ required: false });
 const reqDef = Object.freeze({ required: true });
 
+let onCreateElement:
+  | ((
+      next: () => void, //
+      type: string | Function,
+      props: Props
+    ) => void)
+  | null = null;
+
+let onInit: (
+  next: () => void, //
+  widgetId: string,
+  widgetCtrl: WidgetCtrl
+) => void = (next) => next();
+
+let onRender: (
+  next: () => void, //
+  widgetId: string
+) => void = (next) => next();
+
 // === exported functions ============================================
+
+function intercept(params: {
+  onCreateElement?(next: () => void, type: string | Widget, props: Props): void;
+  onInit?(next: () => void, widgetId: string, widgetCtrl: WidgetCtrl): void;
+  onRender?(next: () => void, widgetId: string): void;
+}) {
+  if (params.onCreateElement) {
+    // TODO
+  }
+
+  if (params.onInit) {
+    const oldOnInit = onInit;
+    const newOnInit = params.onInit;
+
+    onInit = (next, widgetId, widgetCtrl) =>
+      void newOnInit(
+        () => oldOnInit(next, widgetId, widgetCtrl),
+        widgetId,
+        widgetCtrl
+      );
+  }
+
+  if (params.onRender) {
+    const oldOnRender = onRender;
+    const newOnRender = params.onRender;
+
+    onRender = (next, widgetId) =>
+      void newOnRender(() => oldOnRender(next, widgetId), widgetId);
+  }
+}
 
 function createElement(type: any, props: any, ...children: any[]) {
   if (type.tagName) {
@@ -96,13 +153,17 @@ function createElement(type: any, props: any, ...children: any[]) {
   for (let i = 0; i < children.length; ++i) {
     const child = children[i];
 
-    if (child != null && typeof child !== "object") {
+    if (child != null && typeof child !== 'object') {
       children[i] = text(String(child), null);
     }
   }
 
-  if (props && "children" in props) {
+  if (props && 'children' in props) {
     delete props.children;
+  }
+
+  if (onCreateElement) {
+    onCreateElement(noop, type, props || null);
   }
 
   const ret = h(type, props || emptyObj, children);
@@ -120,20 +181,41 @@ function widget<T extends PropsDef>(
   tagName: string
 ): <T extends PropsDef>(
   propsConfig: T,
-  ...modifiers: ((elem: HTMLElement) => void)[] // TODO!!!
+  ...modifiers: ((ctrl: WidgetCtrl) => void)[]
 ) => (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
+
+function widget(
+  tagName: string
+): (
+  ...modifiers: ((ctrl: WidgetCtrl) => void)[]
+) => (init: InitFunc<{}>) => Widget<{}>;
 
 function widget(tagName: string, arg?: any): any {
   if (arg === undefined) {
-    return (propsDef: PropsDef) => (init: InitFunc) =>
-      defineWidget(tagName, propsDef, init);
+    return (...args: any[]) =>
+      (init: InitFunc) => {
+        let propsDef: PropsDef | null = null;
+        let modifiers: ((ctrl: WidgetCtrl) => void)[] | null = null;
+
+        if (typeof args[0] === 'object') {
+          propsDef = args[0];
+
+          if (args.length > 1) {
+            modifiers = args.slice(1);
+          }
+        } else if (args.length > 0) {
+          modifiers = args;
+        }
+
+        return defineWidget(tagName, propsDef, init, modifiers);
+      };
   }
 
-  if (typeof arg === "function") {
+  if (typeof arg === 'function') {
     return defineWidget(tagName, emptyObj, arg);
   }
 
-  const propsDef: PropsDef = arg && typeof arg === "object" ? arg : emptyObj;
+  const propsDef: PropsDef = arg && typeof arg === 'object' ? arg : emptyObj;
 
   return (init: InitFunc) => {
     return defineWidget(tagName, propsDef, init);
@@ -146,13 +228,13 @@ function render(what: VNode, where: string | HTMLElement) {
   }
 
   const target =
-    typeof where === "string" ? document.querySelector(where) : where;
+    typeof where === 'string' ? document.querySelector(where) : where;
 
   if (target === null) {
     throw Error(`Could not find target element '${where}'`);
   }
 
-  target.append(document.createElement("div"));
+  target.append(document.createElement('div'));
   patch(what, target);
 }
 
@@ -171,20 +253,49 @@ function opt(defaultValue?: any): any {
   return arguments.length > 0 ? { required: false, defaultValue } : optDef;
 }
 
+function use(params: {
+  styles?: null | string | string[];
+  deps?: any[];
+  slots?: string[];
+}) {
+  let styles: string | null = null;
+
+  if (params.styles) {
+    styles = (Array.isArray(params.styles) ? params.styles : [params.styles])
+      .map((it) => it.trim())
+      .join('\n\n// -----------\n\n');
+  }
+
+  return (ctrl: WidgetCtrl) => {
+    if (!styles) {
+      return;
+    }
+
+    const elem = ctrl.getElement();
+    const stylesElem = elem.shadowRoot!.firstChild!;
+    const styleElem = document.createElement('style');
+    styleElem.append(document.createTextNode(styles));
+    stylesElem.appendChild(styleElem);
+  };
+}
+
+function createRef<T>(value: T | null = null): RefObject<T> {
+  return { value };
+}
+
 // === locals ========================================================
 
 function defineWidget(
   tagName: string,
   propsDef: PropsDef | null,
-  init: InitFunc
+  init: InitFunc,
+  modifiers: ((ctrl: WidgetCtrl) => void)[] | null = null
 ): Widget {
   const widgetClass = class Widget extends BaseWidget {
     static tagName = tagName;
 
     constructor() {
-      let ctrl!: WidgetCtrl;
-
-      super(propsDef || emptyObj, init, (c) => (ctrl = c));
+      super(propsDef || emptyObj, init, modifiers);
     }
   };
 
@@ -216,22 +327,18 @@ function hasOwn(subj: any, propName: string) {
 function setProp(subj: any, name: string, value: any): void {
   const type = typeof subj;
 
-  if (subj !== null && (type === "object" || type === "function")) {
+  if (subj !== null && (type === 'object' || type === 'function')) {
     Object.defineProperty(subj, name, {
-      value,
+      value
     });
   }
-}
-
-function setName(subj: any, name: string) {
-  setProp(subj, "name", name);
 }
 
 function getDefaultProps(propsDef: PropsDef): Props {
   const ret: Props = {};
 
   for (const key of Object.keys(propsDef)) {
-    if (hasOwn(propsDef[key], "defaultValue")) {
+    if (hasOwn(propsDef[key], 'defaultValue')) {
       ret[key] = (propsDef[key] as any).defaultValue;
     }
   }
@@ -242,78 +349,144 @@ function getDefaultProps(propsDef: PropsDef): Props {
 // --- BaseWidget ----------------------------------------------------
 
 class BaseWidget extends HTMLElement {
+  static #nextId = 0;
+
   #initialized = false;
   #mounted = false;
   #stylesElem: HTMLSpanElement;
   #contentElem: HTMLSpanElement;
   #ctrl: WidgetCtrl;
-  #initFunc: InitFunc;
-  //#renderFunc: () => VNode;
+  #id = Date.now() + '-' + BaseWidget.#nextId++;
+  #init: InitFunc;
+  #modifiers: ((ctrl: WidgetCtrl) => void)[] | null;
+  #render!: () => VNode;
+  #props: Props = {};
+  #propsObj: Props = {};
+  #defaultProps: Props;
+  #updateRequested = false;
 
-  #render = (content: VNode) => {
+  #updatePropsObj = () => {
+    for (const key in this.#propsObj) {
+      delete this.#propsObj[key];
+    }
+
+    Object.assign(this.#propsObj, this.#props);
+
+    for (const key of Object.keys(this.#defaultProps)) {
+      if (this.#propsObj[key] === undefined) {
+        this.#propsObj[key] = this.#defaultProps[key];
+      }
+    }
+  };
+
+  #patch = () => {
+    if (this.#mounted) {
+      this.#lifecycle.beforeUpdate.forEach((it) => it());
+    }
+
+    let content: VNode = null;
+    onRender(() => void (content = this.#render()), this.#id);
     const target = this.#contentElem;
 
     if (target.innerHTML.length === 0) {
-      target.appendChild(document.createElement("span"));
+      target.appendChild(document.createElement('span'));
     }
 
-    patch(target, content);
+    patch(target.firstChild, content);
+
+    if (!this.#mounted) {
+      this.#initialized = true;
+      this.#mounted = true;
+      this.#lifecycle.afterMount.forEach((it) => it());
+    } else {
+      this.#lifecycle.afterUpdate.forEach((it) => it());
+    }
   };
 
   #lifecycle = {
     afterMount: [] as (() => void)[],
     beforeUpdate: [] as (() => void)[],
     afterUpdate: [] as (() => void)[],
-    beforeUnmount: [] as (() => void)[],
+    beforeUnmount: [] as (() => void)[]
   };
 
-  #update = () => {};
+  #update = () => {
+    if (!this.#updateRequested) {
+      this.#updateRequested = true;
+
+      requestAnimationFrame(() => {
+        this.#updateRequested = false;
+        this.#updatePropsObj();
+        this.#patch();
+      });
+    }
+  };
 
   constructor(
     propsDef: PropsDef,
     init: InitFunc<Props>,
-    passCtrl: (ctrl: WidgetCtrl) => void
+    modifiers: ((ctrl: WidgetCtrl) => void)[] | null
   ) {
     super();
-
-    this.#initFunc = init;
+    this.#init = init;
+    this.#modifiers = modifiers;
 
     this.#ctrl = {
-      update: () => {
-        this.#update();
-      },
-
-      afterMount: (action) => {
-        this.#lifecycle.afterMount.push(action);
-      },
-
-      beforeUpdate: (action) => {
-        this.#lifecycle.beforeUpdate.push(action);
-      },
-
-      afterUpdate: (action) => {
-        this.#lifecycle.afterUpdate.push(action);
-      },
-
-      beforeUnmount: (action) => {
-        this.#lifecycle.beforeUnmount.push(action);
-      },
+      getElement: () => this,
+      update: () => this.#update(),
+      afterMount: (action) => this.#lifecycle.afterMount.push(action),
+      beforeUpdate: (action) => this.#lifecycle.beforeUpdate.push(action),
+      afterUpdate: (action) => this.#lifecycle.afterUpdate.push(action),
+      beforeUnmount: (action) => this.#lifecycle.beforeUnmount.push(action)
     };
 
-    passCtrl(this.#ctrl);
-    this.attachShadow({ mode: "open" });
-    this.#stylesElem = document.createElement("span");
-    this.#stylesElem.setAttribute("role", "styles");
-    this.#contentElem = document.createElement("span");
-    this.#contentElem.setAttribute("role", "content");
+    BaseWidget.#nextId = BaseWidget.#nextId % 200000000;
+
+    this.attachShadow({ mode: 'open' });
+    this.#stylesElem = document.createElement('span');
+    this.#stylesElem.setAttribute('role', 'styles');
+    this.#contentElem = document.createElement('span');
+    this.#contentElem.setAttribute('role', 'content');
     this.shadowRoot!.append(this.#stylesElem, this.#contentElem);
+    this.#defaultProps = getDefaultProps(propsDef);
+    this.#props = { ...this.#defaultProps };
+
+    for (const key of Object.keys(propsDef)) {
+      const propDef = propsDef[key];
+
+      if (hasOwn(propDef, 'defaultValue')) {
+        this.#props[key] = (propDef as any).defaultValue;
+      }
+
+      Object.defineProperty(this, key, {
+        get() {
+          return this.#props[key];
+        },
+
+        set(value: unknown) {
+          this.#props[key] = value;
+          this.#update();
+        }
+      });
+    }
   }
 
   connectedCallback() {
-    this.#render(html`<div>Juhu</div>`);
-    this.#initialized = true;
-    this.#mounted = true;
-    this.#lifecycle.afterMount.forEach((action) => action());
+    if (!this.#initialized) {
+      this.#updatePropsObj();
+
+      onInit(
+        () => void (this.#render = this.#init(this.#propsObj)),
+        this.#id,
+        this.#ctrl
+      );
+
+      if (this.#modifiers) {
+        this.#modifiers.forEach((it) => it(this.#ctrl));
+      }
+    }
+
+    this.#patch();
   }
 
   disconnectedCallback() {

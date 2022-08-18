@@ -1,0 +1,13 @@
+{
+  "version": "0.2",
+  "words": ["jsxs", "vdom", "vnode"],
+  "ignorePaths": [
+    "package.json",
+    "package-lock.json",
+    "yarn.log",
+    ".vscode/**",
+    "**/*.min.js"
+  ],
+  "ignoreRegExpList": [],
+  "useGitignore": true
+}
