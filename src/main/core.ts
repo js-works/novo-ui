@@ -1,4 +1,4 @@
-import { h, patch, text } from './vdom';
+import { h, patch, text } from './internal/vdom';
 
 // === exports =======================================================
 
