@@ -16,6 +16,7 @@ module.exports = {
       'novo-ui/ext': path.resolve(__dirname, '../src/main/ext.ts'),
       'novo-ui/util': path.resolve(__dirname, '../src/main/util.ts'),
       'novo-ui/html': path.resolve(__dirname, '../src/main/html.ts'),
+      'novo-ui/reactive': path.resolve(__dirname, '../src/main/reactive.ts'),
       'novo-ui/jsx-runtime': path.resolve(
         __dirname,
         '../src/main/jsx-runtime.ts'

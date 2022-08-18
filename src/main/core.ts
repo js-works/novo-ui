@@ -101,7 +101,8 @@ let onInit: (
 
 let onRender: (
   next: () => void, //
-  widgetId: string
+  widgetId: string,
+  widgetCtrl: WidgetCtrl | null
 ) => void = (next) => next();
 
 // === exported functions ============================================
@@ -109,7 +110,11 @@ let onRender: (
 function intercept(params: {
   onCreateElement?(next: () => void, type: string | Widget, props: Props): void;
   onInit?(next: () => void, widgetId: string, widgetCtrl: WidgetCtrl): void;
-  onRender?(next: () => void, widgetId: string): void;
+  onRender?(
+    next: () => void,
+    widgetId: string,
+    widgetCtrl: WidgetCtrl | null
+  ): void;
 }) {
   if (params.onCreateElement) {
     // TODO
@@ -131,8 +136,12 @@ function intercept(params: {
     const oldOnRender = onRender;
     const newOnRender = params.onRender;
 
-    onRender = (next, widgetId) =>
-      void newOnRender(() => oldOnRender(next, widgetId), widgetId);
+    onRender = (next, widgetId, widgetCtrl) =>
+      void newOnRender(
+        () => oldOnRender(next, widgetId, widgetCtrl),
+        widgetId,
+        widgetCtrl
+      );
   }
 }
 
@@ -327,7 +336,12 @@ class BaseWidget extends HTMLElement {
     }
 
     let content: VNode = null;
-    onRender(() => void (content = this.#render()), this.#id);
+    onRender(
+      () => void (content = this.#render()),
+      this.#id,
+      !this.#initialized ? this.#ctrl : null
+    );
+
     const target = this.#contentElem;
 
     if (target.innerHTML.length === 0) {

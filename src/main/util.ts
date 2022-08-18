@@ -2,7 +2,7 @@ import type { RefObject, Widget } from 'novo-ui';
 
 // === exports =======================================================
 
-export { createRef, createRefFor, classes };
+export { classes, combineStyles, createRef, createRefFor };
 
 // === exported functions ============================================
 
@@ -14,6 +14,12 @@ function createRefFor<T extends object>(
   component: Widget<{ ref: RefObject<T> }>
 ): RefObject<T> {
   return createRef();
+}
+
+function combineStyles(styles: string | string[]) {
+  return (Array.isArray(styles) ? styles : [styles])
+    .map((it) => it.trim())
+    .join('\n\n// -----------\n\n');
 }
 
 function classes(

@@ -1,4 +1,5 @@
-import { intercept, Props, Ref, RefObject, WidgetCtrl } from 'novo-ui';
+import { intercept, Ref, RefObject, WidgetCtrl } from 'novo-ui';
+import { combineStyles } from 'novo-ui/util';
 
 // === types =========================================================
 
@@ -82,14 +83,11 @@ intercept({
 
 function setStyles(styles: string | string[]) {
   const ctrl = getCtrl();
-
-  const stylesStr = (Array.isArray(styles) ? styles : [styles])
-    .map((it) => it.trim())
-    .join('\n\n// -----------\n\n');
-
+  const stylesStr = combineStyles(styles);
   const elem = ctrl.getElement();
   const stylesElem = elem.shadowRoot!.firstChild!;
   const styleElem = document.createElement('style');
+
   styleElem.append(document.createTextNode(stylesStr));
   stylesElem.appendChild(styleElem);
 }
