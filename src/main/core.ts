@@ -178,6 +178,12 @@ function widget(tagName: string, init: InitFunc<{}>): Widget;
 
 function widget<T extends PropsDef>(
   tagName: string,
+  widgetConfig: WidgetConfig<T> | null,
+  init: InitFunc<PropsType2<T>>
+): Widget<PropsType<T>>;
+
+function widget<T extends PropsDef>(
+  tagName: string,
   widgetConfig: WidgetConfig<T>
 ): {
   from: (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
@@ -189,24 +195,28 @@ function widget<T extends WidgetConfig>(
   widgetConfig: WidgetConfig<T>
 ) => (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
 
-function widget(tagName: string, arg?: any): any {
+function widget(tagName: string, arg1?: any, arg2?: any): any {
+  if (arguments.length > 2) {
+    return defineWidget(tagName, arg1?.props || null, arg2);
+  }
+
   if (arguments.length < 2) {
     return (widgetConfig: WidgetConfig) => (init: InitFunc) => {
       return defineWidget(tagName, widgetConfig.props || null, init);
     };
   }
 
-  if (typeof arg === 'function') {
-    return defineWidget(tagName, emptyObj, arg);
+  if (typeof arg1 === 'function') {
+    return defineWidget(tagName, emptyObj, arg1);
   }
 
-  if (arg && typeof arg === 'object') {
+  if (arg1 && typeof arg1 === 'object') {
     return {
-      from: (init: InitFunc) => defineWidget(tagName, arg, init)
+      from: (init: InitFunc) => defineWidget(tagName, arg1, init)
     };
   }
 
-  return (init: InitFunc) => defineWidget(tagName, arg || null, init);
+  return (init: InitFunc) => defineWidget(tagName, arg1 || null, init);
 }
 
 function render(what: VNode, where: string | HTMLElement) {
