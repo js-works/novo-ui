@@ -13,6 +13,12 @@ module.exports = {
   webpackFinal: async (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
+      "novo-ui/ext": path.resolve(__dirname, "../src/main/ext.ts"),
+      "novo-ui/html": path.resolve(__dirname, "../src/main/html.ts"),
+      "novo-ui/jsx-runtime": path.resolve(
+        __dirname,
+        "../src/main/jsx-runtime.ts"
+      ),
       "novo-ui": path.resolve(__dirname, "../src/main/core.ts"),
     };
 

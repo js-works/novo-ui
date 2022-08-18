@@ -8,9 +8,8 @@
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "removeComments": true,
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment",
+    "jsx": "react-jsx",
+    "jsxImportSource": "novo-ui",
     "preserveConstEnums": true,
     "downlevelIteration": true,
     "sourceMap": true,
@@ -21,6 +20,8 @@
     "experimentalDecorators": true,
     "paths": {
       "novo-ui/ext": ["src/main/ext.ts"],
+      "novo-ui/html": ["src/main/html.ts"],
+      "novo-ui/jsx-runtime": ["src/main/jsx-runtime.ts"],
       "novo-ui": ["src/main/core.ts"]
     },
     "typeRoots": ["node_modules/@types"],

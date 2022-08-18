@@ -1,8 +1,9 @@
-import { patch } from "./lib/superfine-patched";
+import { h, patch, text } from "./lib/superfine-patched";
+import { html } from "./html";
 
 // === exports =======================================================
 
-export { opt, props, render, req, widget };
+export { createElement as h, opt, props, render, req, widget };
 export type { Props, VNode, Widget };
 
 // === exported types ================================================
@@ -82,6 +83,31 @@ const optDef = Object.freeze({ required: false });
 const reqDef = Object.freeze({ required: true });
 
 // === exported functions ============================================
+
+function createElement(type: any, props: any, ...children: any[]) {
+  if (type.tagName) {
+    type = type.tagName;
+  }
+
+  if (children.length > 0) {
+    children = children.flat();
+  }
+
+  for (let i = 0; i < children.length; ++i) {
+    const child = children[i];
+
+    if (child != null && typeof child !== "object") {
+      children[i] = text(String(child), null);
+    }
+  }
+
+  if (props && "children" in props) {
+    delete props.children;
+  }
+
+  const ret = h(type, props || emptyObj, children);
+  return ret;
+}
 
 function widget(tagName: string, init: InitFunc<{}>): Widget;
 
@@ -221,8 +247,18 @@ class BaseWidget extends HTMLElement {
   #stylesElem: HTMLSpanElement;
   #contentElem: HTMLSpanElement;
   #ctrl: WidgetCtrl;
-  #init: (props: Props) => () => VNode;
-  #render: (() => VNode) | null = null;
+  #initFunc: InitFunc;
+  //#renderFunc: () => VNode;
+
+  #render = (content: VNode) => {
+    const target = this.#contentElem;
+
+    if (target.innerHTML.length === 0) {
+      target.appendChild(document.createElement("span"));
+    }
+
+    patch(target, content);
+  };
 
   #lifecycle = {
     afterMount: [] as (() => void)[],
@@ -240,7 +276,7 @@ class BaseWidget extends HTMLElement {
   ) {
     super();
 
-    this.#init = init;
+    this.#initFunc = init;
 
     this.#ctrl = {
       update: () => {
@@ -274,7 +310,7 @@ class BaseWidget extends HTMLElement {
   }
 
   connectedCallback() {
-    this.#contentElem.innerHTML = "Juhu";
+    this.#render(html`<div>Juhu</div>`);
     this.#initialized = true;
     this.#mounted = true;
     this.#lifecycle.afterMount.forEach((action) => action());

@@ -1,5 +1,6 @@
 import { opt, props, req, widget, Widget } from "novo-ui";
 import type { Props } from "novo-ui";
+import { html } from "novo-ui/html";
 
 export default {
   title: "Demo",
@@ -15,7 +16,11 @@ const CounterDemo = widget("cc-counter-demo", {
   initialCount: opt(0),
   label: opt("Counter"),
 })((p) => {
-  return () => `${p.label}: ${p.initialCount}`;
+  return () => html`
+    <div>
+      <div>${p.label}: ${p.initialCount}</div>
+    </div>
+  `;
 });
 
 const CounterDemo2 = widget("cc-counter-demo2")(
@@ -24,5 +29,9 @@ const CounterDemo2 = widget("cc-counter-demo2")(
     label: opt("Counter"),
   })
 )((p) => {
-  return () => `${p.label}: ${p.initialCount}`;
+  return () => html`
+    <div>
+      <div>${p.label}: ${p.initialCount}</div>
+    </div>
+  `;
 });
