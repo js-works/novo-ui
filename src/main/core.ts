@@ -10,7 +10,7 @@ export {
   props,
   render,
   req,
-  use,
+  styles,
   widget
 };
 export type { Props, Ref, RefCallback, RefObject, VNode, Widget, WidgetCtrl };
@@ -253,28 +253,24 @@ function opt(defaultValue?: any): any {
   return arguments.length > 0 ? { required: false, defaultValue } : optDef;
 }
 
-function use(params: {
-  styles?: null | string | string[];
-  deps?: any[];
-  slots?: string[];
-}) {
-  let styles: string | null = null;
+function styles(styles?: null | string | string[]) {
+  let stylesStr: string | null = null;
 
-  if (params.styles) {
-    styles = (Array.isArray(params.styles) ? params.styles : [params.styles])
+  if (styles) {
+    stylesStr = (Array.isArray(styles) ? styles : [styles])
       .map((it) => it.trim())
       .join('\n\n// -----------\n\n');
   }
 
   return (ctrl: WidgetCtrl) => {
-    if (!styles) {
+    if (!stylesStr) {
       return;
     }
 
     const elem = ctrl.getElement();
     const stylesElem = elem.shadowRoot!.firstChild!;
     const styleElem = document.createElement('style');
-    styleElem.append(document.createTextNode(styles));
+    styleElem.append(document.createTextNode(stylesStr));
     stylesElem.appendChild(styleElem);
   };
 }

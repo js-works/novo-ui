@@ -1,5 +1,14 @@
 /** @jsx createElement */
-import { createElement, opt, props, req, use, widget, Widget } from 'novo-ui';
+import {
+  createElement,
+  opt,
+  props,
+  req,
+  styles,
+  widget,
+  Widget
+} from 'novo-ui';
+
 import type { Props } from 'novo-ui';
 import { state } from 'novo-ui/ext';
 
@@ -21,9 +30,7 @@ const CounterDemo = widget('x-counter-demo')(
     label: opt('Counter')
   }),
 
-  use({
-    styles: counterStyles
-  })
+  styles(counterStyles)
 )((p) => {
   const [s, set] = state({ count: p.initialCount });
   const increment = () => set.count((it) => it + 1);
