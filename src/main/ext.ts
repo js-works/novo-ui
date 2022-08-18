@@ -1,4 +1,4 @@
-import { intercept, Props, Ref, RefObject, WidgetCtrl } from "novo-ui";
+import { intercept, Props, Ref, RefObject, WidgetCtrl } from 'novo-ui';
 
 // === types =========================================================
 
@@ -27,7 +27,6 @@ export {
   effect,
   getRefresher,
   mutable,
-  preset,
   stateFn,
   stateObj,
   stateObj as state, // not sure about the final name
@@ -37,7 +36,7 @@ export {
   interval,
   handleMethods,
   handlePromise,
-  withDefaults,
+  setStyles
 };
 
 // === types =========================================================
@@ -60,7 +59,7 @@ let currCtrl: WidgetCtrl | null = null;
 
 function getCtrl() {
   if (!currCtrl) {
-    throw Error("Extension has been called outside of widget function");
+    throw Error('Extension has been called outside of widget function');
   }
 
   return currCtrl;
@@ -74,85 +73,25 @@ intercept({
     } finally {
       currCtrl = null;
     }
-  },
+  }
 });
 
 // === extensions ====================================================
 
-// --- withDefaults --------------------------------------------------
+// --- setStyles -----------------------------------------------------
 
-function withDefaults<P extends Props, D extends Partial<P>>(
-  props: P,
-  defaults: D | (() => D)
-): P & D {
-  const ret: any = {};
-  const preactClass = (props as any)?.constructor?.__preactClass;
-
-  if (typeof preactClass !== "function") {
-    throw new TypeError("Illegal first argument for function `preset`");
-  }
-
-  let defaultValues: D | null = null;
+function setStyles(styles: string | string[]) {
   const ctrl = getCtrl();
 
-  if (typeof defaults !== "function") {
-    defaultValues = defaults;
-  } else {
-    defaultValues = preactClass.__defaults;
+  const stylesStr = (Array.isArray(styles) ? styles : [styles])
+    .map((it) => it.trim())
+    .join('\n\n// -----------\n\n');
 
-    if (!defaultValues) {
-      defaultValues = defaults();
-      preactClass.__defaults = defaultValues;
-    }
-  }
-
-  const reassign = () => {
-    for (const key in ret) {
-      delete ret[key];
-    }
-
-    Object.assign(ret, defaultValues, props);
-  };
-
-  ctrl.beforeUpdate(reassign);
-  reassign();
-
-  return ret;
-}
-
-// --- preset --------------------------------------------------------
-
-function preset<P extends Props, D extends Partial<P>>(
-  props: P,
-  defaults: D | (() => D)
-): asserts props is P & D {
-  const preactClass = (props as any)?.constructor?.__preactClass;
-
-  if (typeof preactClass !== "function") {
-    throw new TypeError("Illegal first argument for function `setDefaults`");
-  }
-
-  let defaultValues: D | null = null;
-  const ctrl = getCtrl();
-
-  if (typeof defaults !== "function") {
-    defaultValues = defaults;
-  } else {
-    defaultValues = preactClass.__defaults;
-
-    if (!defaultValues) {
-      defaultValues = defaults();
-      preactClass.__defaults = defaultValues;
-    }
-  }
-
-  (props.constructor as any).__defaults = defaultValues;
-
-  for (const key in defaultValues) {
-    if (!props.hasOwnProperty(key)) {
-      (props as any)[key] = defaultValues[key];
-    }
-  }
+  const elem = ctrl.getElement();
+  const stylesElem = elem.shadowRoot!.firstChild!;
+  const styleElem = document.createElement('style');
+  styleElem.append(document.createTextNode(stylesStr));
+  stylesElem.appendChild(styleElem);
 }
 
 // --- getRefresher --------------------------------------------------
@@ -175,7 +114,7 @@ function stateVal<T>(value: T): [Getter<T>, Setter<T>] {
 
   const setter: Setter<T> = (valueOrMapper): void => {
     nextVal =
-      typeof valueOrMapper === "function"
+      typeof valueOrMapper === 'function'
         ? (valueOrMapper as any)(nextVal)
         : valueOrMapper;
 
@@ -206,7 +145,7 @@ function stateObj<T extends Record<string, any>>(
 
   const setter: StateObjSetter<T> = ((updater: Updater<T, Partial<T>>) => {
     const values =
-      typeof updater === "function" ? (updater as any)(clone) : updater;
+      typeof updater === 'function' ? (updater as any)(clone) : updater;
 
     Object.assign(clone, values);
     merge = true;
@@ -216,7 +155,7 @@ function stateObj<T extends Record<string, any>>(
   for (const key of Object.keys(obj)) {
     (setter as any)[key] = (updater: Updater<T>) => {
       (clone as any)[key] =
-        typeof updater === "function" ? (updater as any)(clone[key]) : updater;
+        typeof updater === 'function' ? (updater as any)(clone[key]) : updater;
       merge = true;
       update();
     };
@@ -245,7 +184,7 @@ function stateFn<T>(initialValue: T): {
       return current;
     } else {
       next =
-        typeof updater === "function" ? (updater as any)(current) : updater;
+        typeof updater === 'function' ? (updater as any)(current) : updater;
 
       update();
     }
@@ -281,7 +220,7 @@ function stateRef<T>(initialValue: T): {
     map(mapper) {
       next = mapper(next);
       update();
-    },
+    }
   };
 }
 
@@ -301,7 +240,7 @@ function mutable<T extends Record<string, any>>(initialState: T): T {
       set(value: any) {
         (values as any)[key] = value;
         update();
-      },
+      }
     });
   }
 
@@ -329,7 +268,7 @@ function createMemo<T, A extends any[], G extends () => A>(
 
       oldDeps = newDeps;
       return value;
-    },
+    }
   };
 
   return memo;
@@ -344,7 +283,7 @@ function afterMount(action: () => void | (() => void)): void {
   ctrl.afterMount(() => {
     const result = action();
 
-    if (typeof result === "function") {
+    if (typeof result === 'function') {
       cleanup = result;
     }
   });
@@ -375,7 +314,7 @@ function effect(
     ctrl.beforeUnmount(() => {
       cleanup && cleanup();
     });
-  } else if (getDeps === undefined || typeof getDeps === "function") {
+  } else if (getDeps === undefined || typeof getDeps === 'function') {
     const callback = () => {
       let needsAction = getDeps === undefined;
 
@@ -399,7 +338,7 @@ function effect(
     ctrl.afterUpdate(callback);
   } else {
     throw new TypeError(
-      "[effect] Third argument must either be undefined, null or a function"
+      '[effect] Third argument must either be undefined, null or a function'
     );
   }
 }
@@ -408,7 +347,7 @@ function effect(
 
 function updateRef<T>(ref: Ref<T> | undefined, value: T | null): void {
   if (ref) {
-    if (typeof ref === "function") {
+    if (typeof ref === 'function') {
       ref(value);
     } else {
       ref.value = value;
@@ -447,12 +386,12 @@ function interval(
   delayOrGetDelay: number | (() => number)
 ) {
   const getCallback =
-    typeof callbackOrRef === "function"
+    typeof callbackOrRef === 'function'
       ? () => callbackOrRef
       : () => callbackOrRef.current;
 
   const getDelay =
-    typeof delayOrGetDelay === "function"
+    typeof delayOrGetDelay === 'function'
       ? delayOrGetDelay
       : () => delayOrGetDelay;
 
@@ -472,23 +411,23 @@ type PromiseRes<T> =
   | {
       result: null;
       error: null;
-      state: "pending";
+      state: 'pending';
     }
   | {
       result: T;
       error: null;
-      state: "resolved";
+      state: 'resolved';
     }
   | {
       result: null;
       error: Error;
-      state: "rejected";
+      state: 'rejected';
     };
 
 const initialState: PromiseRes<any> = {
   result: null,
   error: null,
-  state: "pending",
+  state: 'pending'
 };
 
 function handlePromise<T>(
@@ -504,7 +443,7 @@ function handlePromise<T>(
     () => {
       ++promiseIdx;
 
-      if (getState().state !== "pending") {
+      if (getState().state !== 'pending') {
         setState(initialState);
       }
 
@@ -516,7 +455,7 @@ function handlePromise<T>(
             setState({
               result,
               error: null,
-              state: "resolved",
+              state: 'resolved'
             });
           }
         })
@@ -525,12 +464,12 @@ function handlePromise<T>(
             setState({
               result: null,
               error: error instanceof Error ? error : new Error(String(error)),
-              state: "rejected",
+              state: 'rejected'
             });
           }
         });
     },
-    typeof getDeps === "function" ? getDeps : null
+    typeof getDeps === 'function' ? getDeps : null
   );
 
   return getState();

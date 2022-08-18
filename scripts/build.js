@@ -16,7 +16,7 @@ build().catch((e) => {
 async function build() {
   await rm('./dist', { recursive: true, force: true });
 
-  for (const pkg of ['core', 'ext', 'html', 'jsx-runtime']) {
+  for (const pkg of ['core', 'ext', 'html', 'jsx-runtime', 'util']) {
     for (const format of ['esm' /*, 'cjs'*/]) {
       const outfile = `./dist/novo-ui.${pkg}.${format}.js`;
 

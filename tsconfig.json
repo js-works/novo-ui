@@ -20,6 +20,7 @@
     "experimentalDecorators": true,
     "paths": {
       "novo-ui/ext": ["src/main/ext.ts"],
+      "novo-ui/util": ["src/main/util.ts"],
       "novo-ui/html": ["src/main/html.ts"],
       "novo-ui/jsx-runtime": ["src/main/jsx-runtime.ts"],
       "novo-ui": ["src/main/core.ts"]

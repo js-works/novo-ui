@@ -2,17 +2,7 @@ import { h, patch, text } from './internal/vdom';
 
 // === exports =======================================================
 
-export {
-  createElement,
-  createRef,
-  intercept,
-  opt,
-  props,
-  render,
-  req,
-  styles,
-  widget
-};
+export { createElement, intercept, opt, render, req, widget };
 export type { Props, Ref, RefCallback, RefObject, VNode, Widget, WidgetCtrl };
 
 // === exported types ================================================
@@ -82,6 +72,11 @@ type PropsType2<T extends PropsDef> = Prettify<
         : never]: T[K] extends PropDefVal<infer U> ? U : never;
     }
 >;
+
+type WidgetConfig<T extends PropsDef = PropsDef> = {
+  props?: T;
+  uses?: any[];
+};
 
 // === local data ====================================================
 
@@ -174,52 +169,35 @@ function widget(tagName: string, init: InitFunc<{}>): Widget;
 
 function widget<T extends PropsDef>(
   tagName: string,
-  propsConfig: T
-): (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
+  widgetConfig: WidgetConfig<T>
+): {
+  from: (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
+};
 
-function widget<T extends PropsDef>(
+function widget<T extends WidgetConfig>(
   tagName: string
 ): <T extends PropsDef>(
-  propsConfig: T,
-  ...modifiers: ((ctrl: WidgetCtrl) => void)[]
+  widgetConfig: WidgetConfig<T>
 ) => (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
 
-function widget(
-  tagName: string
-): (
-  ...modifiers: ((ctrl: WidgetCtrl) => void)[]
-) => (init: InitFunc<{}>) => Widget<{}>;
-
 function widget(tagName: string, arg?: any): any {
-  if (arg === undefined) {
-    return (...args: any[]) =>
-      (init: InitFunc) => {
-        let propsDef: PropsDef | null = null;
-        let modifiers: ((ctrl: WidgetCtrl) => void)[] | null = null;
-
-        if (typeof args[0] === 'object') {
-          propsDef = args[0];
-
-          if (args.length > 1) {
-            modifiers = args.slice(1);
-          }
-        } else if (args.length > 0) {
-          modifiers = args;
-        }
-
-        return defineWidget(tagName, propsDef, init, modifiers);
-      };
+  if (arguments.length < 2) {
+    return (widgetConfig: WidgetConfig) => (init: InitFunc) => {
+      return defineWidget(tagName, widgetConfig.props || null, init);
+    };
   }
 
   if (typeof arg === 'function') {
     return defineWidget(tagName, emptyObj, arg);
   }
 
-  const propsDef: PropsDef = arg && typeof arg === 'object' ? arg : emptyObj;
+  if (arg && typeof arg === 'object') {
+    return {
+      from: (init: InitFunc) => defineWidget(tagName, arg, init)
+    };
+  }
 
-  return (init: InitFunc) => {
-    return defineWidget(tagName, propsDef, init);
-  };
+  return (init: InitFunc) => defineWidget(tagName, arg || null, init);
 }
 
 function render(what: VNode, where: string | HTMLElement) {
@@ -238,10 +216,6 @@ function render(what: VNode, where: string | HTMLElement) {
   patch(what, target);
 }
 
-function props<T extends PropsDef>(propsDef: T): T {
-  return propsDef;
-}
-
 function req<T>(): PropDefReq<T> {
   return reqDef;
 }
@@ -253,45 +227,18 @@ function opt(defaultValue?: any): any {
   return arguments.length > 0 ? { required: false, defaultValue } : optDef;
 }
 
-function styles(styles?: null | string | string[]) {
-  let stylesStr: string | null = null;
-
-  if (styles) {
-    stylesStr = (Array.isArray(styles) ? styles : [styles])
-      .map((it) => it.trim())
-      .join('\n\n// -----------\n\n');
-  }
-
-  return (ctrl: WidgetCtrl) => {
-    if (!stylesStr) {
-      return;
-    }
-
-    const elem = ctrl.getElement();
-    const stylesElem = elem.shadowRoot!.firstChild!;
-    const styleElem = document.createElement('style');
-    styleElem.append(document.createTextNode(stylesStr));
-    stylesElem.appendChild(styleElem);
-  };
-}
-
-function createRef<T>(value: T | null = null): RefObject<T> {
-  return { value };
-}
-
 // === locals ========================================================
 
 function defineWidget(
   tagName: string,
-  propsDef: PropsDef | null,
-  init: InitFunc,
-  modifiers: ((ctrl: WidgetCtrl) => void)[] | null = null
+  widgetConfig: WidgetConfig | null,
+  init: InitFunc
 ): Widget {
   const widgetClass = class Widget extends BaseWidget {
     static tagName = tagName;
 
     constructor() {
-      super(propsDef || emptyObj, init, modifiers);
+      super(widgetConfig?.props || emptyObj, init);
     }
   };
 
@@ -354,7 +301,6 @@ class BaseWidget extends HTMLElement {
   #ctrl: WidgetCtrl;
   #id = Date.now() + '-' + BaseWidget.#nextId++;
   #init: InitFunc;
-  #modifiers: ((ctrl: WidgetCtrl) => void)[] | null;
   #render!: () => VNode;
   #props: Props = {};
   #propsObj: Props = {};
@@ -418,14 +364,9 @@ class BaseWidget extends HTMLElement {
     }
   };
 
-  constructor(
-    propsDef: PropsDef,
-    init: InitFunc<Props>,
-    modifiers: ((ctrl: WidgetCtrl) => void)[] | null
-  ) {
+  constructor(propsDef: PropsDef, init: InitFunc<Props>) {
     super();
     this.#init = init;
-    this.#modifiers = modifiers;
 
     this.#ctrl = {
       getElement: () => this,
@@ -476,10 +417,6 @@ class BaseWidget extends HTMLElement {
         this.#id,
         this.#ctrl
       );
-
-      if (this.#modifiers) {
-        this.#modifiers.forEach((it) => it(this.#ctrl));
-      }
     }
 
     this.#patch();
