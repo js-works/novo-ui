@@ -1,6 +1,0 @@
-{
-  "name": "novo-ui_jsx-runtime",
-  "version": "0.0.1",
-  "private": true,
-  "main": "src/main/jsx-runtime.ts"
-}

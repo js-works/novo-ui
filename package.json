@@ -1,41 +1,41 @@
 {
   "name": "novo-ui",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "",
-  "main": "dist/novo-ui.core.cjs.js",
-  "module": "dist/novo-ui.core.esm.js",
-  "jsdelivr": "dist/novo-ui.core.cjs.js",
-  "unpkg": "dist/novo-ui.core.cjs.js",
+  "main": "dist/novo-ui.core.cjs",
+  "module": "dist/novo-ui.core.mjs",
+  "jsdelivr": "dist/novo-ui.core.cjs",
+  "unpkg": "dist/novo-ui.core.cjs",
   "types": "dist/types/core.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/novo-ui.core.esm.js",
-      "require": "./dist/novo-ui.core.cjs.js",
+      "import": "./dist/novo-ui.core.mjs",
+      "require": "./dist/novo-ui.core.cjs",
       "types": "./dist/types/core.d.ts"
     },
     "./ext": {
-      "import": "./dist/novo-ui.ext.esm.js",
-      "require": "./dist/novo-ui.ext.cjs.js",
+      "import": "./dist/novo-ui.ext.mjs",
+      "require": "./dist/novo-ui.ext.cjs",
       "types": "./dist/types/ext.d.ts"
     },
     "./util": {
-      "import": "./dist/novo-ui.util.esm.js",
-      "require": "./dist/novo-ui.util.cjs.js",
+      "import": "./dist/novo-ui.util.mjs",
+      "require": "./dist/novo-ui.util.cjs",
       "types": "./dist/types/util.d.ts"
     },
     "./html": {
-      "import": "./dist/novo-ui.html.esm.js",
-      "require": "./dist/novo-ui.html.cjs.js",
+      "import": "./dist/novo-ui.html.mjs",
+      "require": "./dist/novo-ui.html.cjs",
       "types": "./dist/types/html.d.ts"
     },
     "./reactive": {
-      "import": "./dist/novo-ui.reactive.esm.js",
-      "require": "./dist/novo-ui.reative.cjs.js",
+      "import": "./dist/novo-ui.reactive.mjs",
+      "require": "./dist/novo-ui.reative.cjs",
       "types": "./dist/types/reactive.d.ts"
     },
     "./jsx-runtime": {
-      "import": "./dist/novo-ui.jsx-runtime.esm.js",
-      "require": "./dist/novo-ui.jsx-runtime.cjs.js",
+      "import": "./dist/novo-ui.jsx-runtime.mjs",
+      "require": "./dist/novo-ui.jsx-runtime.cjs",
       "types": "./dist/types/jsx-runtime.d.ts"
     }
   },

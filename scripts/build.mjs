@@ -18,7 +18,9 @@ async function build() {
 
   for (const pkg of ['core', 'ext', 'html', 'jsx-runtime', 'util']) {
     for (const format of ['esm', 'cjs']) {
-      const outfile = `./dist/novo-ui.${pkg}.${format}.js`;
+      const outfile = `./dist/novo-ui.${pkg}.${
+        format === 'cjs' ? 'cjs' : 'mjs'
+      }`;
 
       await esbuild.build({
         entryPoints: [`./src/main/${pkg}.ts`],
@@ -48,12 +50,16 @@ async function build() {
 
   copyFileSync('./src/main/jsx.d.ts', './dist/types/jsx.d.ts');
 
-  await zipDirectory('.', './dist/source/source.zip', '*.*', [
-    'src',
-    'scripts',
-    '.storybook'
+  await zipDirectory('.', './dist/source/source.zip', [
+    '*',
+    '.*',
+    '.storybook/**',
+    'boxroom/**',
+    'scripts/**',
+    'src/**'
   ]);
 }
+
 // === helpers =======================================================
 
 async function createBrotliFile(source, target) {
@@ -68,15 +74,24 @@ async function createBrotliFile(source, target) {
   await writeFile(target, compressedContent);
 }
 
-function zipDirectory(source, out, fileGlob = '*.*', directories = []) {
+function zipDirectory(sourceDir, zipFile, fileGlob) {
   const archive = archiver('zip', { zlib: { level: 9 } });
-  const stream = createWriteStream(out);
+  const stream = createWriteStream(zipFile);
 
-  archive.glob(fileGlob);
-  directories.forEach((dir) => archive.directory(`${source}/${dir}/`));
+  archive.glob(fileGlob, {
+    cwd: sourceDir,
+    ignore: [
+      'package-lock.json',
+      'yarn.lock',
+      'node_modules',
+      'dist',
+      'build',
+      '.git'
+    ]
+  });
 
   return new Promise((resolve, reject) => {
-    mkdirSync(path.dirname(out), { recursive: true });
+    mkdirSync(path.dirname(zipFile), { recursive: true });
     archive.on('error', (err) => reject(err)).pipe(stream);
     stream.on('close', () => resolve());
     archive.finalize();
