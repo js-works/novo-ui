@@ -30,8 +30,10 @@ type Widget<P extends Props = {}, M extends Methods = {}> = {
   tagName: string;
 };
 
-type WidgetInstance<P extends Props = {}, M extends Methods = {}> =
-  HTMLElement & P & M;
+type WidgetInstance<
+  P extends Props = {},
+  M extends Methods = {}
+> = HTMLElement & P & M;
 
 type WidgetCtrl = {
   getElement(): HTMLElement;
@@ -62,33 +64,29 @@ type PropsType<T extends PropsDef> = {
   [K in keyof T as T[K] extends PropDefReq<any>
     ? K
     : never]: T[K] extends PropDefReq<infer U> ? U : never;
-} &
-  {
-    [K in keyof T as T[K] extends PropDefOpt<any>
-      ? K
-      : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
-  } &
-  {
-    [K in keyof T as T[K] extends PropDefVal<any>
-      ? K
-      : never]?: T[K] extends PropDefVal<infer U> ? U : never;
-  };
+} & {
+  [K in keyof T as T[K] extends PropDefOpt<any>
+    ? K
+    : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
+} & {
+  [K in keyof T as T[K] extends PropDefVal<any>
+    ? K
+    : never]?: T[K] extends PropDefVal<infer U> ? U : never;
+};
 
 type PropsType2<T extends PropsDef> = {
   [K in keyof T as T[K] extends PropDefReq<any>
     ? K
     : never]: T[K] extends PropDefReq<infer U> ? U : never;
-} &
-  {
-    [K in keyof T as T[K] extends PropDefOpt<any>
-      ? K
-      : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
-  } &
-  {
-    [K in keyof T as T[K] extends PropDefVal<any>
-      ? K
-      : never]: T[K] extends PropDefVal<infer U> ? U : never;
-  };
+} & {
+  [K in keyof T as T[K] extends PropDefOpt<any>
+    ? K
+    : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
+} & {
+  [K in keyof T as T[K] extends PropDefVal<any>
+    ? K
+    : never]: T[K] extends PropDefVal<infer U> ? U : never;
+};
 
 type MethodsDef<M extends Methods = Methods> = {
   readonly [symOpaqueType]: 'MethodsDef';
@@ -241,8 +239,11 @@ function render(what: VNode, where: string | HTMLElement) {
     throw Error(`Could not find target element '${where}'`);
   }
 
-  target.append(document.createElement('div'));
-  patch(what, target);
+  if (!target.firstChild) {
+    target.append(document.createElement('span'));
+  }
+
+  patch(target.firstChild, what);
 }
 
 function props<P extends PropsDef>(propsDef: P): PropsConfig<P> {

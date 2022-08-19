@@ -1,7 +1,7 @@
 import esbuild from 'esbuild';
 import path from 'path';
 import zlib from 'zlib';
-import { createWriteStream, mkdirSync } from 'fs';
+import { copyFileSync, createWriteStream, mkdirSync } from 'fs';
 import { readFile, writeFile, rm } from 'fs/promises';
 import { execSync } from 'child_process';
 import { promisify } from 'util';
@@ -17,7 +17,7 @@ async function build() {
   await rm('./dist', { recursive: true, force: true });
 
   for (const pkg of ['core', 'ext', 'html', 'jsx-runtime', 'util']) {
-    for (const format of ['esm' /*, 'cjs'*/]) {
+    for (const format of ['esm', 'cjs']) {
       const outfile = `./dist/novo-ui.${pkg}.${format}.js`;
 
       await esbuild.build({
@@ -45,6 +45,8 @@ async function build() {
       stdio: 'inherit'
     }
   );
+
+  copyFileSync('./src/main/jsx.d.ts', './dist/types/jsx.d.ts');
 
   await zipDirectory('.', './dist/source/source.zip', '*.*', [
     'src',
