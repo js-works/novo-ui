@@ -36,17 +36,59 @@ very often, that makes quite a difference):
 ### Simple counter
 
 ```tsx
-import { opt, render, widget } from 'novo-ui';
-import { state } from 'novo-ui/ext';
+import { opt, props, render, widget } from 'novo-ui';
+import { effect, setMethods, state } from 'novo-ui/ext';
 
-const Counter = widget('x-counter', {
-  props: {
+const Counter = widget('demo-counter')(
+  props({
     initialCount: opt(0),
     label: opt('Counter')
-  }
-}).from((p) => {
+  })
+)((p) => {
   const [s, set] = state({ count: p.initialCount });
   const increment = () => set.count((it) => it + 1);
+
+  return () => (
+    <button onclick={increment}>
+      {p.label}: {s.count}
+    </button>
+  );
+});
+
+render(<Counter />, '#app');
+```
+
+### Another counter using a bit more of the API
+
+```tsx
+import { methods, opt, props, render, widget } from 'novo-ui';
+import { state } from 'novo-ui/ext';
+
+const Counter = widget('demo-counter')(
+  props({
+    initialCount: opt(0),
+    label: opt('Counter')
+  }),
+
+  methods<{
+    reset(): void;
+    increment(): void;
+    decrement(): void;
+  }>
+)((p, self) => {
+  const [s, set] = state({ count: p.initialCount });
+  const increment = () => set.count((it) => it + 1);
+
+  setMethods(self, {
+    reset: () => set.count(p.initialCount),
+    increment: () => set.count((it) => it + 1),
+    decrement: () => set.count((it) => it - 1)
+  });
+
+  effect(
+    () => console.log(`Value of "${p.label}": ${s.count})`,
+    () => [s.count]
+  );
 
   return () => (
     <button onclick={increment}>

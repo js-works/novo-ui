@@ -40,7 +40,7 @@ const CounterDemo = widget('x-counter-demo')(
     reset(): void;
     increment(): void;
     decrement(): void;
-  }>()
+  }>
 )((p, self) => {
   const [s, set] = state({ count: p.initialCount });
   const increment = () => set.count((it) => it + 1);

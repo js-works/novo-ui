@@ -194,13 +194,13 @@ function widget(tagName: string): {
     init: InitFunc<PropsType2<P>, {}>
   ) => Widget<PropsType<P>, {}>;
 
-  <M extends Methods>(methodsConfig: MethodsConfig<M>): (
+  <M extends Methods>(getMethodsConfig: () => MethodsConfig<M>): (
     init: InitFunc<{}, M>
   ) => Widget<{}, M>;
 
   <P extends PropsDef, M extends Methods>(
     propsConfig: PropsConfig<P>,
-    methodsConfig: MethodsConfig<M>
+    getMethodsConfig: () => MethodsConfig<M>
   ): (init: InitFunc<PropsType2<P>, M>) => Widget<PropsType<P>, M>;
 };
 
