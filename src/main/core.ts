@@ -31,9 +31,12 @@ type WidgetCtrl = {
 
 // === local types ===================================================
 
+type Func<A extends any[], R extends any> = (...args: A) => R;
+type Methods = Record<string, Func<any, any>>;
+
 type InitFunc<P extends Props = Props, M extends Methods = Methods> = (
   props: P,
-  self: HTMLElement & M
+  self: Widget<P, M>
 ) => () => VNode;
 
 type PropDefReq<T> = { required: true };
@@ -41,46 +44,38 @@ type PropDefOpt<T> = { required: false; defaultValue: never };
 type PropDefVal<T> = { required: false; defaultValue: T };
 type PropDef<T> = PropDefReq<T> | PropDefOpt<T> | PropDefVal<T>;
 type PropsDef = Record<string, PropDef<unknown>>;
-type Prettify<T extends {}> = { [K in keyof T]: T[K] };
 
-type PropsType<T extends PropsDef> = Prettify<
+type PropsType<T extends PropsDef> = {
+  [K in keyof T as T[K] extends PropDefReq<any>
+    ? K
+    : never]: T[K] extends PropDefReq<infer U> ? U : never;
+} &
   {
-    [K in keyof T as T[K] extends PropDefReq<any>
+    [K in keyof T as T[K] extends PropDefOpt<any>
       ? K
-      : never]: T[K] extends PropDefReq<infer U> ? U : never;
+      : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
   } &
-    {
-      [K in keyof T as T[K] extends PropDefOpt<any>
-        ? K
-        : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
-    } &
-    {
-      [K in keyof T as T[K] extends PropDefVal<any>
-        ? K
-        : never]?: T[K] extends PropDefVal<infer U> ? U : never;
-    }
->;
-
-type PropsType2<T extends PropsDef> = Prettify<
   {
-    [K in keyof T as T[K] extends PropDefReq<any>
+    [K in keyof T as T[K] extends PropDefVal<any>
       ? K
-      : never]: T[K] extends PropDefReq<infer U> ? U : never;
-  } &
-    {
-      [K in keyof T as T[K] extends PropDefOpt<any>
-        ? K
-        : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
-    } &
-    {
-      [K in keyof T as T[K] extends PropDefVal<any>
-        ? K
-        : never]: T[K] extends PropDefVal<infer U> ? U : never;
-    }
->;
+      : never]?: T[K] extends PropDefVal<infer U> ? U : never;
+  };
 
-type Func<A extends any[], R extends any> = (...args: A) => R;
-type Methods = Record<string, Func<any, any>>;
+type PropsType2<T extends PropsDef> = {
+  [K in keyof T as T[K] extends PropDefReq<any>
+    ? K
+    : never]: T[K] extends PropDefReq<infer U> ? U : never;
+} &
+  {
+    [K in keyof T as T[K] extends PropDefOpt<any>
+      ? K
+      : never]?: T[K] extends PropDefOpt<infer U> ? U : never;
+  } &
+  {
+    [K in keyof T as T[K] extends PropDefVal<any>
+      ? K
+      : never]: T[K] extends PropDefVal<infer U> ? U : never;
+  };
 
 type MethodsDef<M extends Methods = Methods> = {
   readonly [symOpaqueType]: 'MethodsDef';

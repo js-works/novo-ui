@@ -1,4 +1,4 @@
-import { intercept, Ref, RefObject, WidgetCtrl } from 'novo-ui';
+import { intercept, Ref, RefObject, Widget, WidgetCtrl } from 'novo-ui';
 import { combineStyles } from 'novo-ui/util';
 
 // === types =========================================================
@@ -28,6 +28,7 @@ export {
   effect,
   getRefresher,
   mutable,
+  setMethods,
   stateFn,
   stateObj,
   stateObj as state, // not sure about the final name
@@ -40,7 +41,10 @@ export {
   setStyles
 };
 
-// === types =========================================================
+// === local types ===================================================
+
+type Func<A extends any[], R extends any> = (...args: A) => R;
+type Methods = Record<string, Func<any, any>>;
 
 type Getter<T> = () => T;
 type Updater<T, U = T> = Exclude<U, Function> | ((value: T) => U);
@@ -78,6 +82,16 @@ intercept({
 });
 
 // === extensions ====================================================
+
+// --- setMethods ----------------------------------------------------
+
+function setMethods<M extends Methods>(self: Widget<any, M>, methods: M) {
+  // just to make sure that this function is called in component's
+  // initialization phase
+  getCtrl();
+
+  Object.assign(self, methods);
+}
 
 // --- setStyles -----------------------------------------------------
 
