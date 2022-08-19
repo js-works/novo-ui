@@ -83,10 +83,10 @@ function zipDirectory(sourceDir, zipFile, fileGlob) {
     ignore: [
       'package-lock.json',
       'yarn.lock',
+      '.git',
       'node_modules',
       'dist',
-      'build',
-      '.git'
+      'build'
     ]
   });
 
