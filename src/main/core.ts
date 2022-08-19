@@ -3,7 +3,17 @@ import { h, patch, text } from './internal/vdom';
 // === exports =======================================================
 
 export { createElement, intercept, methods, opt, props, render, req, widget };
-export type { Props, Ref, RefCallback, RefObject, VNode, Widget, WidgetCtrl };
+
+export type {
+  Props,
+  Ref,
+  RefCallback,
+  RefObject,
+  VNode,
+  Widget,
+  WidgetCtrl,
+  WidgetInstance
+};
 
 // === exported types ================================================
 
@@ -16,9 +26,12 @@ type RefCallback<T> = (value: T | null) => void;
 type Ref<T> = RefObject<T> | RefCallback<T>;
 
 type Widget<P extends Props = {}, M extends Methods = {}> = {
-  new (): HTMLElement & P & M;
+  new (): WidgetInstance<P, M>;
   tagName: string;
 };
+
+type WidgetInstance<P extends Props = {}, M extends Methods = {}> =
+  HTMLElement & P & M;
 
 type WidgetCtrl = {
   getElement(): HTMLElement;
@@ -34,9 +47,9 @@ type WidgetCtrl = {
 type Func<A extends any[], R extends any> = (...args: A) => R;
 type Methods = Record<string, Func<any, any>>;
 
-type InitFunc<P extends Props = Props, M extends Methods = Methods> = (
-  props: P,
-  self: Widget<P, M>
+type InitFunc<P extends PropsDef = PropsDef, M extends Methods = Methods> = (
+  props: PropsType2<P>,
+  self: WidgetInstance<PropsType<P>, M>
 ) => () => VNode;
 
 type PropDefReq<T> = { required: true };
@@ -191,7 +204,7 @@ function widget(tagName: string, init: InitFunc<{}, {}>): Widget;
 
 function widget(tagName: string): {
   <P extends PropsDef>(propsConfig: PropsConfig<P>): (
-    init: InitFunc<PropsType2<P>, {}>
+    init: InitFunc<P, {}>
   ) => Widget<PropsType<P>, {}>;
 
   <M extends Methods>(getMethodsConfig: () => MethodsConfig<M>): (
@@ -201,7 +214,7 @@ function widget(tagName: string): {
   <P extends PropsDef, M extends Methods>(
     propsConfig: PropsConfig<P>,
     getMethodsConfig: () => MethodsConfig<M>
-  ): (init: InitFunc<PropsType2<P>, M>) => Widget<PropsType<P>, M>;
+  ): (init: InitFunc<P, M>) => Widget<PropsType<P>, M>;
 };
 
 function widget(tagName: string, arg?: any): any {

@@ -1,7 +1,7 @@
 /** @jsx createElement */
 import { createElement, methods, opt, props, req, widget } from 'novo-ui';
 import type { Props, Widget } from 'novo-ui';
-import { setMethods, setStyles, state } from 'novo-ui/ext';
+import { setMethods, setStyles, state, ticker } from 'novo-ui/ext';
 import { makeWidgetsReactive } from 'novo-ui/reactive';
 import { makeAutoObservable } from 'mobx';
 
@@ -10,6 +10,7 @@ export default {
 };
 
 export const counter = () => demo(CounterDemo);
+export const clock = () => demo(ClockDemo);
 export const duration = () => demo(DurationDemo);
 
 // Auto-updating mobx store
@@ -29,6 +30,16 @@ function demo(widget: Widget, props: Props = {}) {
 }
 
 const counterStyles = 'button { border: 1px solid #aaa; padding: 12px 30px; }';
+
+const ClockDemo = widget('x-clock-demo', () => {
+  const getTime = ticker((date) => date.toLocaleTimeString(), 1000);
+
+  return () => (
+    <div>
+      Current time: {getTime()}
+    </div>
+  );
+});
 
 const CounterDemo = widget('x-counter-demo')(
   props({

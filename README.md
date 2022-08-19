@@ -33,11 +33,30 @@ very often, that makes quite a difference):
 - `p` is the variable for the props object
 - `s` is the variable for a state object
 
+### Clock - showing the current time, updating every second
+
+```tsx
+import { render, widget } from 'novo-ui';
+import { ticker } from 'novo-ui/ext';
+
+const Clock = widget('demo-clock', () => {
+  const getTime = ticker((date) => date.toLocaleTimeString(), 1000);
+
+  return () => (
+    <div>
+      <b>Current time: {getTime()}</b>
+    </div>
+  );
+});
+
+render(<Clock />, '#app');
+```
+
 ### Simple counter
 
 ```tsx
 import { opt, props, render, widget } from 'novo-ui';
-import { effect, setMethods, state } from 'novo-ui/ext';
+import { state } from 'novo-ui/ext';
 
 const Counter = widget('demo-counter')(
   props({
@@ -61,10 +80,10 @@ render(<Counter />, '#app');
 ### Another counter using a bit more of the API
 
 ```tsx
-import { methods, opt, props, render, widget } from 'novo-ui';
-import { state } from 'novo-ui/ext';
+import { methods, opt, props, widget } from 'novo-ui';
+import { effect, setMethods, state } from 'novo-ui/ext';
 
-const Counter = widget('demo-counter')(
+export const Counter = widget('demo-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -96,8 +115,6 @@ const Counter = widget('demo-counter')(
     </button>
   );
 });
-
-render(<Counter />, '#app');
 ```
 
 ## API

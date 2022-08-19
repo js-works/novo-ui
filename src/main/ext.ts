@@ -1,4 +1,4 @@
-import { intercept, Ref, RefObject, Widget, WidgetCtrl } from 'novo-ui';
+import { intercept, Ref, RefObject, WidgetInstance, WidgetCtrl } from 'novo-ui';
 import { combineStyles } from 'novo-ui/util';
 
 // === types =========================================================
@@ -24,7 +24,7 @@ export {
   afterMount,
   create,
   createMemo,
-  createTicker,
+  ticker,
   effect,
   getRefresher,
   mutable,
@@ -85,10 +85,13 @@ intercept({
 
 // --- setMethods ----------------------------------------------------
 
-function setMethods<M extends Methods>(self: Widget<any, M>, methods: M) {
-  // just to make sure that this function is called in component's
-  // initialization phase
-  getCtrl();
+function setMethods<M extends Methods>(
+  self: WidgetInstance<any, M>,
+  methods: M
+) {
+  if (self !== getCtrl().getElement()) {
+    throw '[setMethods] Illegal first argument';
+  }
 
   Object.assign(self, methods);
 }
@@ -489,16 +492,20 @@ function handlePromise<T>(
 
 // --- ticker --------------------------------------------------------
 
-function createTicker(): () => Date;
-function createTicker<T>(mapper: (time: Date) => T): () => T;
+function ticker(millis?: number): () => Date;
+function ticker<T>(mapper: (time: Date) => T, millis?: number): () => T;
 
-function createTicker(mapper?: (time: Date) => any): any {
+function ticker(arg1?: any, arg2?: any): any {
+  const mapper = typeof arg1 === 'function' ? arg1 : null;
+  const millis =
+    typeof arg1 === 'number' ? arg1 : typeof arg2 === 'number' ? arg2 : 1000;
+
   const now = () => new Date();
   const [getTime, setTime] = stateVal(now());
 
   interval(() => {
     setTime(now());
-  }, 1000);
+  }, millis);
 
   return mapper ? () => mapper(getTime()) : getTime();
 }
