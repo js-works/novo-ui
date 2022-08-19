@@ -2,10 +2,12 @@ import { h, patch, text } from './internal/vdom';
 
 // === exports =======================================================
 
-export { createElement, intercept, opt, render, req, widget };
+export { createElement, intercept, methods, opt, props, render, req, widget };
 export type { Props, Ref, RefCallback, RefObject, VNode, Widget, WidgetCtrl };
 
 // === exported types ================================================
+
+declare const symOpaqueType: unique symbol;
 
 type Props = Record<string, any>;
 type VNode = any; // TODO!!!
@@ -13,8 +15,8 @@ type RefObject<T> = { value: T | null };
 type RefCallback<T> = (value: T | null) => void;
 type Ref<T> = RefObject<T> | RefCallback<T>;
 
-type Widget<P extends Props = {}> = {
-  new (): HTMLElement & P;
+type Widget<P extends Props = {}, M extends Methods = {}> = {
+  new (): HTMLElement & P & M;
   tagName: string;
 };
 
@@ -29,7 +31,11 @@ type WidgetCtrl = {
 
 // === local types ===================================================
 
-type InitFunc<P extends Props = Props> = (props: P) => () => VNode;
+type InitFunc<P extends Props = Props, M extends Methods = Methods> = (
+  props: P,
+  self: HTMLElement & M
+) => () => VNode;
+
 type PropDefReq<T> = { required: true };
 type PropDefOpt<T> = { required: false; defaultValue: never };
 type PropDefVal<T> = { required: false; defaultValue: T };
@@ -73,9 +79,21 @@ type PropsType2<T extends PropsDef> = Prettify<
     }
 >;
 
-type WidgetConfig<T extends PropsDef = PropsDef> = {
-  props?: T;
-  uses?: any[];
+type Func<A extends any[], R extends any> = (...args: A) => R;
+type Methods = Record<string, Func<any, any>>;
+
+type MethodsDef<M extends Methods = Methods> = {
+  readonly [symOpaqueType]: 'MethodsDef';
+};
+
+type PropsConfig<P extends PropsDef> = {
+  type: 'propsConfig';
+  propsDef: P;
+};
+
+type MethodsConfig<M extends Methods> = {
+  type: 'methodsConfig';
+  methodsDef: MethodsDef<M>;
 };
 
 // === local data ====================================================
@@ -174,49 +192,33 @@ function createElement(type: any, props: any, ...children: any[]) {
   return ret;
 }
 
-function widget(tagName: string, init: InitFunc<{}>): Widget;
+function widget(tagName: string, init: InitFunc<{}, {}>): Widget;
 
-function widget<T extends PropsDef>(
-  tagName: string,
-  widgetConfig: WidgetConfig<T> | null,
-  init: InitFunc<PropsType2<T>>
-): Widget<PropsType<T>>;
+function widget(tagName: string): {
+  <P extends PropsDef>(propsConfig: PropsConfig<P>): (
+    init: InitFunc<PropsType2<P>, {}>
+  ) => Widget<PropsType<P>, {}>;
 
-function widget<T extends PropsDef>(
-  tagName: string,
-  widgetConfig: WidgetConfig<T>
-): {
-  from: (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
+  <M extends Methods>(methodsConfig: MethodsConfig<M>): (
+    init: InitFunc<{}, M>
+  ) => Widget<{}, M>;
+
+  <P extends PropsDef, M extends Methods>(
+    propsConfig: PropsConfig<P>,
+    methodsConfig: MethodsConfig<M>
+  ): (init: InitFunc<PropsType2<P>, M>) => Widget<PropsType<P>, M>;
 };
 
-function widget<T extends WidgetConfig>(
-  tagName: string
-): <T extends PropsDef>(
-  widgetConfig: WidgetConfig<T>
-) => (init: InitFunc<PropsType2<T>>) => Widget<PropsType<T>>;
-
-function widget(tagName: string, arg1?: any, arg2?: any): any {
-  if (arguments.length > 2) {
-    return defineWidget(tagName, arg1?.props || null, arg2);
+function widget(tagName: string, arg?: any): any {
+  if (typeof arg === 'function') {
+    return defineWidget(tagName, emptyObj, arg);
   }
 
-  if (arguments.length < 2) {
-    return (widgetConfig: WidgetConfig) => (init: InitFunc) => {
-      return defineWidget(tagName, widgetConfig.props || null, init);
-    };
-  }
+  return (arg1: any, arg2?: any) => {
+    const propsDef = arg1.type === 'propsConfig' ? arg1.propsDef : null;
 
-  if (typeof arg1 === 'function') {
-    return defineWidget(tagName, emptyObj, arg1);
-  }
-
-  if (arg1 && typeof arg1 === 'object') {
-    return {
-      from: (init: InitFunc) => defineWidget(tagName, arg1, init)
-    };
-  }
-
-  return (init: InitFunc) => defineWidget(tagName, arg1 || null, init);
+    return (init: InitFunc) => defineWidget(tagName, propsDef, init);
+  };
 }
 
 function render(what: VNode, where: string | HTMLElement) {
@@ -235,6 +237,14 @@ function render(what: VNode, where: string | HTMLElement) {
   patch(what, target);
 }
 
+function props<P extends PropsDef>(propsDef: P): PropsConfig<P> {
+  return { type: 'propsConfig', propsDef: propsDef };
+}
+
+function methods<M extends Methods>(): MethodsConfig<M> {
+  return { type: 'methodsConfig', methodsDef: {} as MethodsDef<M> };
+}
+
 function req<T>(): PropDefReq<T> {
   return reqDef;
 }
@@ -250,14 +260,14 @@ function opt(defaultValue?: any): any {
 
 function defineWidget(
   tagName: string,
-  widgetConfig: WidgetConfig | null,
+  propsDef: PropsDef | null,
   init: InitFunc
 ): Widget {
   const widgetClass = class Widget extends BaseWidget {
     static tagName = tagName;
 
     constructor() {
-      super(widgetConfig?.props || emptyObj, init);
+      super(propsDef || emptyObj, init);
     }
   };
 
@@ -388,7 +398,7 @@ class BaseWidget extends HTMLElement {
     }
   };
 
-  constructor(propsDef: PropsDef, init: InitFunc<Props>) {
+  constructor(propsDef: PropsDef, init: InitFunc) {
     super();
     this.#init = init;
 
@@ -437,7 +447,7 @@ class BaseWidget extends HTMLElement {
       this.#updatePropsObj();
 
       onInit(
-        () => void (this.#render = this.#init(this.#propsObj)),
+        () => void (this.#render = this.#init(this.#propsObj, this as any)),
         this.#id,
         this.#ctrl
       );

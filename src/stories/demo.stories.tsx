@@ -1,6 +1,6 @@
 /** @jsx createElement */
-import { createElement, opt, req, widget, Widget } from 'novo-ui';
-import type { Props } from 'novo-ui';
+import { createElement, methods, opt, props, req, widget } from 'novo-ui';
+import type { Props, Widget } from 'novo-ui';
 import { setStyles, state } from 'novo-ui/ext';
 import { makeWidgetsReactive } from 'novo-ui/reactive';
 import { makeAutoObservable } from 'mobx';
@@ -30,12 +30,18 @@ function demo(widget: Widget, props: Props = {}) {
 
 const counterStyles = 'button { border: 1px solid #aaa; padding: 12px 30px; }';
 
-const CounterDemo = widget('x-counter-demo', {
-  props: {
+const CounterDemo = widget('x-counter-demo')(
+  props({
     initialCount: opt(0),
     label: opt('Counter')
-  }
-}).from((p) => {
+  }),
+
+  methods<{
+    reset(): void;
+    increment(): void;
+    decrement(): void;
+  }>()
+)((p) => {
   const [s, set] = state({ count: p.initialCount });
   const increment = () => set.count((it) => it + 1);
 
