@@ -32,7 +32,7 @@ function demo(widget: Widget, props: Props = {}) {
 const counterStyles = 'button { border: 1px solid #aaa; padding: 12px 30px; }';
 
 const ClockDemo = widget('x-clock-demo', () => {
-  const getTime = ticker((date) => date.toLocaleTimeString(), 1000);
+  const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
     <div>

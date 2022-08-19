@@ -12,7 +12,7 @@ Be aware that this project is just for research purposes and is not meant to be 
 ### Installation
 
 ```
-git clone https://github.com/xdev1/novo-ui.git
+git clone https://github.com/js-works/novo-ui.git
 cd novo-ui
 yarn install
 ```
@@ -40,7 +40,7 @@ import { render, widget } from 'novo-ui';
 import { ticker } from 'novo-ui/ext';
 
 const Clock = widget('demo-clock', () => {
-  const getTime = ticker((date) => date.toLocaleTimeString(), 1000);
+  const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
     <div>

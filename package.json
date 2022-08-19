@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xdev1/novo-ui.git"
+    "url": "git+https://github.com/js-works/novo-ui.git"
   },
   "keywords": [],
   "author": "",
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/xdev1/novo-ui/issues"
+    "url": "https://github.com/js-works/novo-ui/issues"
   },
-  "homepage": "https://github.com/xdev1/novo-ui#readme",
+  "homepage": "https://github.com/js-works/novo-ui#readme",
   "devDependencies": {
     "@babel/core": "^7.18.10",
     "@babel/plugin-transform-react-jsx": "^7.18.10",
