@@ -123,7 +123,9 @@ export const Counter = widget('demo-counter')(
 
 - createElement
 - intercept
+- methods
 - opt
+- props
 - render
 - req
 - widget

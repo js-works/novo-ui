@@ -36,7 +36,7 @@ const ClockDemo = widget('x-clock-demo', () => {
 
   return () => (
     <div>
-      Current time: {getTime()}
+      <b>Current time: {getTime()}</b>
     </div>
   );
 });
