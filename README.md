@@ -105,7 +105,7 @@ export const Counter = widget('demo-counter')(
   });
 
   effect(
-    () => console.log(`Value of "${p.label}": ${s.count})`,
+    () => console.log(`Value of "${p.label}": ${s.count})`),
     () => [s.count]
   );
 
