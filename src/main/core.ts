@@ -2,7 +2,7 @@ import { h, patch, text } from './internal/vdom';
 
 // === exports =======================================================
 
-export { createElement, intercept, methods, opt, props, render, req, widget };
+export { compo, createElement, intercept, methods, opt, props, render, req };
 
 export type {
   Props,
@@ -10,9 +10,9 @@ export type {
   RefCallback,
   RefObject,
   VNode,
-  Widget,
-  WidgetCtrl,
-  WidgetInstance
+  Component,
+  ComponentCtrl,
+  ComponentInstance
 };
 
 // === exported types ================================================
@@ -25,17 +25,17 @@ type RefObject<T> = { value: T | null };
 type RefCallback<T> = (value: T | null) => void;
 type Ref<T> = RefObject<T> | RefCallback<T>;
 
-type Widget<P extends Props = {}, M extends Methods = {}> = {
-  new (): WidgetInstance<P, M>;
+type Component<P extends Props = {}, M extends Methods = {}> = {
+  new (): ComponentInstance<P, M>;
   tagName: string;
 };
 
-type WidgetInstance<
+type ComponentInstance<
   P extends Props = {},
   M extends Methods = {}
 > = HTMLElement & P & M;
 
-type WidgetCtrl = {
+type ComponentCtrl = {
   getElement(): HTMLElement;
   update(): void;
   afterMount: (task: () => void) => void;
@@ -50,8 +50,7 @@ type Func<A extends any[], R extends any> = (...args: A) => R;
 type Methods = Record<string, Func<any, any>>;
 
 type InitFunc<P extends PropsDef = PropsDef, M extends Methods = Methods> = (
-  props: PropsType2<P>,
-  self: WidgetInstance<PropsType<P>, M>
+  self: ComponentInstance<PropsType2<P>, M>
 ) => () => VNode;
 
 type PropDefReq<T> = { required: true };
@@ -119,26 +118,27 @@ let onCreateElement:
 
 let onInit: (
   next: () => void, //
-  widgetId: string,
-  widgetCtrl: WidgetCtrl
+  id: string,
+  ctrl: ComponentCtrl
 ) => void = (next) => next();
 
 let onRender: (
   next: () => void, //
-  widgetId: string,
-  widgetCtrl: WidgetCtrl | null
+  id: string,
+  ctrl: ComponentCtrl | null
 ) => void = (next) => next();
 
 // === exported functions ============================================
 
 function intercept(params: {
-  onCreateElement?(next: () => void, type: string | Widget, props: Props): void;
-  onInit?(next: () => void, widgetId: string, widgetCtrl: WidgetCtrl): void;
-  onRender?(
+  onCreateElement?(
     next: () => void,
-    widgetId: string,
-    widgetCtrl: WidgetCtrl | null
+    type: string | Component,
+    props: Props
   ): void;
+
+  onInit?(next: () => void, id: string, ctrl: ComponentCtrl): void;
+  onRender?(next: () => void, id: string, ctrl: ComponentCtrl | null): void;
 }) {
   if (params.onCreateElement) {
     // TODO
@@ -148,24 +148,16 @@ function intercept(params: {
     const oldOnInit = onInit;
     const newOnInit = params.onInit;
 
-    onInit = (next, widgetId, widgetCtrl) =>
-      void newOnInit(
-        () => oldOnInit(next, widgetId, widgetCtrl),
-        widgetId,
-        widgetCtrl
-      );
+    onInit = (next, id, ctrl) =>
+      void newOnInit(() => oldOnInit(next, id, ctrl), id, ctrl);
   }
 
   if (params.onRender) {
     const oldOnRender = onRender;
     const newOnRender = params.onRender;
 
-    onRender = (next, widgetId, widgetCtrl) =>
-      void newOnRender(
-        () => oldOnRender(next, widgetId, widgetCtrl),
-        widgetId,
-        widgetCtrl
-      );
+    onRender = (next, id, ctrl) =>
+      void newOnRender(() => oldOnRender(next, id, ctrl), id, ctrl);
   }
 }
 
@@ -198,32 +190,32 @@ function createElement(type: any, props: any, ...children: any[]) {
   return ret;
 }
 
-function widget(tagName: string, init: InitFunc<{}, {}>): Widget;
+function compo(tagName: string, init: InitFunc<{}, {}>): Component;
 
-function widget(tagName: string): {
+function compo(tagName: string): {
   <P extends PropsDef>(propsConfig: PropsConfig<P>): (
     init: InitFunc<P, {}>
-  ) => Widget<PropsType<P>, {}>;
+  ) => Component<PropsType<P>, {}>;
 
   <M extends Methods>(getMethodsConfig: () => MethodsConfig<M>): (
     init: InitFunc<{}, M>
-  ) => Widget<{}, M>;
+  ) => Component<{}, M>;
 
   <P extends PropsDef, M extends Methods>(
     propsConfig: PropsConfig<P>,
     getMethodsConfig: () => MethodsConfig<M>
-  ): (init: InitFunc<P, M>) => Widget<PropsType<P>, M>;
+  ): (init: InitFunc<P, M>) => Component<PropsType<P>, M>;
 };
 
-function widget(tagName: string, arg?: any): any {
+function compo(tagName: string, arg?: any): any {
   if (typeof arg === 'function') {
-    return defineWidget(tagName, emptyObj, arg);
+    return defineComponent(tagName, emptyObj, arg);
   }
 
   return (arg1: any, arg2?: any) => {
     const propsDef = arg1.type === 'propsConfig' ? arg1.propsDef : null;
 
-    return (init: InitFunc) => defineWidget(tagName, propsDef, init);
+    return (init: InitFunc) => defineComponent(tagName, propsDef, init);
   };
 }
 
@@ -267,12 +259,12 @@ function opt(defaultValue?: any): any {
 
 // === locals ========================================================
 
-function defineWidget(
+function defineComponent(
   tagName: string,
   propsDef: PropsDef | null,
   init: InitFunc
-): Widget {
-  const widgetClass = class Widget extends BaseWidget {
+): Component {
+  const componentClass = class Component extends BaseComponent {
     static tagName = tagName;
 
     constructor() {
@@ -280,14 +272,14 @@ function defineWidget(
     }
   };
 
-  registerWidget(widgetClass, tagName);
+  registerComponent(componentClass, tagName);
 
-  return widgetClass;
+  return componentClass;
 }
 
 // --- helpers -------------------------------------------------------
 
-function registerWidget(widgetClass: Widget, tagName: string) {
+function registerComponent(componentClass: Component, tagName: string) {
   if (customElements.get(tagName)) {
     console.clear();
     console.log(`Custom element "${tagName}" already defined -> reloading...`);
@@ -298,7 +290,7 @@ function registerWidget(widgetClass: Widget, tagName: string) {
     }, 1000);
   }
 
-  customElements.define(tagName, widgetClass);
+  customElements.define(tagName, componentClass);
 }
 
 function hasOwn(subj: any, propName: string) {
@@ -327,37 +319,22 @@ function getDefaultProps(propsDef: PropsDef): Props {
   return ret;
 }
 
-// --- BaseWidget ----------------------------------------------------
+// --- BaseComponent ----------------------------------------------------
 
-class BaseWidget extends HTMLElement {
+class BaseComponent extends HTMLElement {
   static #nextId = 0;
 
   #initialized = false;
   #mounted = false;
   #stylesElem: HTMLSpanElement;
   #contentElem: HTMLSpanElement;
-  #ctrl: WidgetCtrl;
-  #id = Date.now() + '-' + BaseWidget.#nextId++;
+  #ctrl: ComponentCtrl;
+  #id = Date.now() + '-' + BaseComponent.#nextId++;
   #init: InitFunc;
   #render!: () => VNode;
   #props: Props = {};
-  #propsObj: Props = {};
   #defaultProps: Props;
   #updateRequested = false;
-
-  #updatePropsObj = () => {
-    for (const key in this.#propsObj) {
-      delete this.#propsObj[key];
-    }
-
-    Object.assign(this.#propsObj, this.#props);
-
-    for (const key of Object.keys(this.#defaultProps)) {
-      if (this.#propsObj[key] === undefined) {
-        this.#propsObj[key] = this.#defaultProps[key];
-      }
-    }
-  };
 
   #patch = () => {
     if (this.#mounted) {
@@ -401,7 +378,6 @@ class BaseWidget extends HTMLElement {
 
       requestAnimationFrame(() => {
         this.#updateRequested = false;
-        this.#updatePropsObj();
         this.#patch();
       });
     }
@@ -420,7 +396,7 @@ class BaseWidget extends HTMLElement {
       beforeUnmount: (action) => this.#lifecycle.beforeUnmount.push(action)
     };
 
-    BaseWidget.#nextId = BaseWidget.#nextId % 200000000;
+    BaseComponent.#nextId = BaseComponent.#nextId % 200000000;
 
     this.attachShadow({ mode: 'open' });
     this.#stylesElem = document.createElement('span');
@@ -453,10 +429,8 @@ class BaseWidget extends HTMLElement {
 
   connectedCallback() {
     if (!this.#initialized) {
-      this.#updatePropsObj();
-
       onInit(
-        () => void (this.#render = this.#init(this.#propsObj, this as any)),
+        () => void (this.#render = this.#init(this as any)),
         this.#id,
         this.#ctrl
       );

@@ -30,16 +30,16 @@ reduce the amount of noise in the source code (for non-trivial
 components, where you access the props and the state object
 very often, that makes quite a difference):
 
-- `p` is the variable for the props object
+- `c` is the variable for the custom element instance
 - `s` is the variable for a state object
 
 ### Clock - showing the current time, updating every second
 
 ```tsx
-import { render, widget } from 'novo-ui';
+import { compo, render } from 'novo-ui';
 import { ticker } from 'novo-ui/ext';
 
-const Clock = widget('demo-clock', () => {
+const Clock = compo('demo-clock', () => {
   const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
@@ -55,21 +55,21 @@ render(<Clock />, '#app');
 ### Simple counter
 
 ```tsx
-import { opt, props, render, widget } from 'novo-ui';
+import { compo, opt, props, render } from 'novo-ui';
 import { state } from 'novo-ui/ext';
 
-const Counter = widget('demo-counter')(
+const Counter = compo('demo-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
   })
-)((p) => {
-  const [s, set] = state({ count: p.initialCount });
+)((c) => {
+  const [s, set] = state({ count: c.initialCount });
   const increment = () => set.count((it) => it + 1);
 
   return () => (
     <button onclick={increment}>
-      {p.label}: {s.count}
+      {c.label}: {s.count}
     </button>
   );
 });
@@ -80,10 +80,10 @@ render(<Counter />, '#app');
 ### Another counter using a bit more of the API
 
 ```tsx
-import { methods, opt, props, widget } from 'novo-ui';
+import { compo, methods, opt, props } from 'novo-ui';
 import { effect, setMethods, state } from 'novo-ui/ext';
 
-export const Counter = widget('demo-counter')(
+export const Counter = compo('demo-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -94,24 +94,24 @@ export const Counter = widget('demo-counter')(
     increment(): void;
     decrement(): void;
   }>
-)((p, self) => {
-  const [s, set] = state({ count: p.initialCount });
+)((c) => {
+  const [s, set] = state({ count: c.initialCount });
   const increment = () => set.count((it) => it + 1);
 
-  setMethods(self, {
-    reset: () => set.count(p.initialCount),
+  setMethods(c, {
+    reset: () => set.count(c.initialCount),
     increment: () => set.count((it) => it + 1),
     decrement: () => set.count((it) => it - 1)
   });
 
   effect(
-    () => console.log(`Value of "${p.label}": ${s.count})`),
+    () => console.log(`Value of "${c.label}": ${s.count})`),
     () => [s.count]
   );
 
   return () => (
     <button onclick={increment}>
-      {p.label}: {s.count}
+      {c.label}: {s.count}
     </button>
   );
 });
@@ -121,6 +121,7 @@ export const Counter = widget('demo-counter')(
 
 ### Core functions
 
+- compo
 - createElement
 - intercept
 - methods
@@ -128,7 +129,6 @@ export const Counter = widget('demo-counter')(
 - props
 - render
 - req
-- widget
 
 ### Extensions
 

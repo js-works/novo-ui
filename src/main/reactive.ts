@@ -3,7 +3,7 @@ import { intercept } from 'novo-ui';
 
 // === exports =======================================================
 
-export { makeWidgetsReactive };
+export { makeComponentsReactive };
 
 // === local data ====================================================
 
@@ -11,7 +11,7 @@ let componentsAreReactive = false;
 
 // === exported functions ============================================
 
-function makeWidgetsReactive() {
+function makeComponentsReactive() {
   if (componentsAreReactive) {
     return;
   }
@@ -20,20 +20,20 @@ function makeWidgetsReactive() {
   const reactionsById: Record<string, Reaction> = {};
 
   intercept({
-    onRender(next, componentId, ctrl) {
+    onRender(next, id, ctrl) {
       if (ctrl) {
         const update = () => ctrl.update();
         const reaction = new Reaction('novo-ui::reaction', () => update());
-        reactionsById[componentId] = reaction;
+        reactionsById[id] = reaction;
 
         ctrl.beforeUnmount(() => {
           reaction.dispose();
-          delete reactionsById[componentId];
+          delete reactionsById[id];
         });
 
         reaction.track(next);
       } else {
-        reactionsById[componentId].track(next);
+        reactionsById[id].track(next);
       }
     }
   });

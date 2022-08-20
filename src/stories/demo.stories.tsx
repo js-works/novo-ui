@@ -1,8 +1,9 @@
 /** @jsx createElement */
-import { createElement, methods, opt, props, req, widget } from 'novo-ui';
-import type { Props, Widget } from 'novo-ui';
+import { compo, createElement, methods, opt, props, req } from 'novo-ui';
+import type { Props, Component } from 'novo-ui';
 import { setMethods, setStyles, state, ticker } from 'novo-ui/ext';
-import { makeWidgetsReactive } from 'novo-ui/reactive';
+import { css } from 'novo-ui/util';
+import { makeComponentsReactive } from 'novo-ui/reactive';
 import { makeAutoObservable } from 'mobx';
 
 export default {
@@ -22,16 +23,21 @@ const store = makeAutoObservable({
   }
 });
 
-makeWidgetsReactive();
+makeComponentsReactive();
 setInterval(() => store.increment(), 1000);
 
-function demo(widget: Widget, props: Props = {}) {
-  return Object.assign(document.createElement(widget.tagName), props);
+function demo(component: Component, props: Props = {}) {
+  return Object.assign(document.createElement(component.tagName), props);
 }
 
-const counterStyles = 'button { border: 1px solid #aaa; padding: 12px 30px; }';
+const counterStyles = css`
+  button {
+    border: 1px solid #aaa;
+    padding: 12px 30px;
+  }
+`;
 
-const ClockDemo = widget('x-clock-demo', () => {
+const ClockDemo = compo('x-clock-demo', () => {
   const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
@@ -41,7 +47,7 @@ const ClockDemo = widget('x-clock-demo', () => {
   );
 });
 
-const CounterDemo = widget('x-counter-demo')(
+const CounterDemo = compo('x-counter-demo')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -52,14 +58,14 @@ const CounterDemo = widget('x-counter-demo')(
     increment(): void;
     decrement(): void;
   }>
-)((p, self) => {
-  const [s, set] = state({ count: p.initialCount });
+)((c) => {
+  const [s, set] = state({ count: c.initialCount });
   const increment = () => set.count((it) => it + 1);
 
   setStyles(counterStyles);
 
-  setMethods(self, {
-    reset: () => set.count(p.initialCount),
+  setMethods(c, {
+    reset: () => set.count(c.initialCount),
     increment: () => set.count((it) => it + 1),
     decrement: () => set.count((it) => it - 1)
   });
@@ -67,12 +73,12 @@ const CounterDemo = widget('x-counter-demo')(
   return () => (
     <div>
       <button onclick={increment}>
-        {p.label}: {s.count}
+        {c.label}: {s.count}
       </button>
     </div>
   );
 });
 
-const DurationDemo = widget('x-duration-demo', () => {
+const DurationDemo = compo('x-duration-demo', () => {
   return () => <div>Duration: {store.count}s</div>;
 });

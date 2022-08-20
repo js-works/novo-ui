@@ -1,8 +1,8 @@
-import type { RefObject, Widget } from 'novo-ui';
+import type { RefObject, Component } from 'novo-ui';
 
 // === exports =======================================================
 
-export { classes, combineStyles, createRef, createRefFor };
+export { classes, combineStyles, createRef, createRefFor, css };
 
 // === exported functions ============================================
 
@@ -11,7 +11,7 @@ function createRef<T>(value: T | null = null): RefObject<T> {
 }
 
 function createRefFor<T extends object>(
-  component: Widget<{ ref: RefObject<T> }>
+  component: Component<{ ref: RefObject<T> }>
 ): RefObject<T> {
   return createRef();
 }
@@ -55,6 +55,26 @@ function classes(
   }
 
   return arr.join(' ');
+}
+
+function css(parts: TemplateStringsArray, ...values: any[]): string {
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  const arr: string[] = [];
+
+  parts.forEach((part, idx) => {
+    arr.push(part);
+
+    const value = values![idx];
+
+    if (value != null) {
+      arr.push(String(values![idx]));
+    }
+  });
+
+  return arr.join('');
 }
 
 // === local helpers =================================================
