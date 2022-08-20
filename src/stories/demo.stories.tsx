@@ -1,5 +1,5 @@
 /** @jsx createElement */
-import { compo, createElement, methods, opt, props, req } from 'novo-ui';
+import { createElement, elem, methods, opt, props, req } from 'novo-ui';
 import type { Props, Component } from 'novo-ui';
 import { setMethods, setStyles, state, ticker } from 'novo-ui/ext';
 import { css } from 'novo-ui/util';
@@ -37,7 +37,7 @@ const counterStyles = css`
   }
 `;
 
-const ClockDemo = compo('x-clock-demo', () => {
+const ClockDemo = elem('x-clock-demo', () => {
   const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
@@ -47,7 +47,7 @@ const ClockDemo = compo('x-clock-demo', () => {
   );
 });
 
-const CounterDemo = compo('x-counter-demo')(
+const CounterDemo = elem('x-counter-demo')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -79,6 +79,6 @@ const CounterDemo = compo('x-counter-demo')(
   );
 });
 
-const DurationDemo = compo('x-duration-demo', () => {
+const DurationDemo = elem('x-duration-demo', () => {
   return () => <div>Duration: {store.count}s</div>;
 });

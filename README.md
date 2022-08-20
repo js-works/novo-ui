@@ -36,10 +36,10 @@ very often, that makes quite a difference):
 ### Clock - showing the current time, updating every second
 
 ```tsx
-import { compo, render } from 'novo-ui';
+import { elem, render } from 'novo-ui';
 import { ticker } from 'novo-ui/ext';
 
-const Clock = compo('demo-clock', () => {
+const Clock = elem('demo-clock', () => {
   const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
@@ -55,10 +55,10 @@ render(<Clock />, '#app');
 ### Simple counter
 
 ```tsx
-import { compo, opt, props, render } from 'novo-ui';
+import { elem, opt, props, render } from 'novo-ui';
 import { state } from 'novo-ui/ext';
 
-const Counter = compo('demo-counter')(
+const Counter = elem('demo-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -80,10 +80,10 @@ render(<Counter />, '#app');
 ### Another counter using a bit more of the API
 
 ```tsx
-import { compo, methods, opt, props } from 'novo-ui';
+import { elem, methods, opt, props } from 'novo-ui';
 import { effect, setMethods, state } from 'novo-ui/ext';
 
-export const Counter = compo('demo-counter')(
+export const Counter = elem('demo-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -121,8 +121,8 @@ export const Counter = compo('demo-counter')(
 
 ### Core functions
 
-- compo
 - createElement
+- elem
 - intercept
 - methods
 - opt

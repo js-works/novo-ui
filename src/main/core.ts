@@ -2,7 +2,7 @@ import { h, patch, text } from './internal/vdom';
 
 // === exports =======================================================
 
-export { compo, createElement, intercept, methods, opt, props, render, req };
+export { createElement, elem, intercept, methods, opt, props, render, req };
 
 export type {
   Props,
@@ -190,9 +190,9 @@ function createElement(type: any, props: any, ...children: any[]) {
   return ret;
 }
 
-function compo(tagName: string, init: InitFunc<{}, {}>): Component;
+function elem(tagName: string, init: InitFunc<{}, {}>): Component;
 
-function compo(tagName: string): {
+function elem(tagName: string): {
   <P extends PropsDef>(propsConfig: PropsConfig<P>): (
     init: InitFunc<P, {}>
   ) => Component<PropsType<P>, {}>;
@@ -207,7 +207,7 @@ function compo(tagName: string): {
   ): (init: InitFunc<P, M>) => Component<PropsType<P>, M>;
 };
 
-function compo(tagName: string, arg?: any): any {
+function elem(tagName: string, arg?: any): any {
   if (typeof arg === 'function') {
     return defineComponent(tagName, emptyObj, arg);
   }
