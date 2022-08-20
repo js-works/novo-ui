@@ -20,7 +20,7 @@ export type {
 declare const symOpaqueType: unique symbol;
 
 type Props = Record<string, any>;
-type VNode = any; // TODO!!!
+type VNode = undefined | null | number | string | JSX.Element | VNode[];
 type RefObject<T> = { value: T | null };
 type RefCallback<T> = (value: T | null) => void;
 type Ref<T> = RefObject<T> | RefCallback<T>;
@@ -161,8 +161,12 @@ function intercept(params: {
   }
 }
 
-function createElement(type: any, props: any, ...children: any[]) {
-  if (type.tagName) {
+function createElement<P extends Props>(
+  type: string | Component,
+  props: P,
+  ...children: VNode[]
+): JSX.Element {
+  if (typeof type !== 'string') {
     type = type.tagName;
   }
 
@@ -174,7 +178,7 @@ function createElement(type: any, props: any, ...children: any[]) {
     const child = children[i];
 
     if (child != null && typeof child !== 'object') {
-      children[i] = text(String(child), null);
+      (children as any)[i] = text(String(child), null);
     }
   }
 
