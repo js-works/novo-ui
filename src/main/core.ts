@@ -5,14 +5,16 @@ import { h, patch, text } from './internal/vdom';
 export { createElement, elem, intercept, methods, opt, props, render, req };
 
 export type {
+  Component,
+  ComponentCtrl,
+  ElementOf,
   Props,
+  Methods,
   Ref,
   RefCallback,
   RefObject,
-  VNode,
-  Component,
-  ComponentCtrl,
-  ComponentInstance
+  VElement,
+  VNode
 };
 
 // === exported types ================================================
@@ -20,20 +22,21 @@ export type {
 declare const symOpaqueType: unique symbol;
 
 type Props = Record<string, any>;
-type VNode = undefined | null | number | string | JSX.Element | VNode[];
+type Methods = Record<string, (...args: any) => any>;
+type VElement<P extends Props = Props> = { [symOpaqueType]: 'VElement' };
+type VNode = undefined | null | number | string | VElement | VNode[];
 type RefObject<T> = { value: T | null };
 type RefCallback<T> = (value: T | null) => void;
 type Ref<T> = RefObject<T> | RefCallback<T>;
 
-type Component<P extends Props = {}, M extends Methods = {}> = {
-  new (): ComponentInstance<P, M>;
-  tagName: string;
-};
+type ElementOf<T extends Component> = T extends Component<infer P, infer M>
+  ? HTMLElement & P & M
+  : never;
 
-type ComponentInstance<
-  P extends Props = {},
-  M extends Methods = {}
-> = HTMLElement & P & M;
+type Component<P extends Props = Props, M extends Methods = Props> = {
+  tagName: string;
+  (props: P, ...children: VNode[]): VElement<P>;
+};
 
 type ComponentCtrl = {
   getElement(): HTMLElement;
@@ -46,11 +49,8 @@ type ComponentCtrl = {
 
 // === local types ===================================================
 
-type Func<A extends any[], R extends any> = (...args: A) => R;
-type Methods = Record<string, Func<any, any>>;
-
 type InitFunc<P extends PropsDef = PropsDef, M extends Methods = Methods> = (
-  self: ComponentInstance<PropsType2<P>, M>
+  self: HTMLElement & PropsType2<P> & M
 ) => () => VNode;
 
 type PropDefReq<T> = { required: true };
@@ -162,10 +162,10 @@ function intercept(params: {
 }
 
 function createElement<P extends Props>(
-  type: string | Component,
+  type: string | Component<P>,
   props: P,
   ...children: VNode[]
-): JSX.Element {
+): VElement<P> {
   if (typeof type !== 'string') {
     type = type.tagName;
   }
@@ -190,8 +190,7 @@ function createElement<P extends Props>(
     onCreateElement(noop, type, props || null);
   }
 
-  const ret = h(type, props || emptyObj, children);
-  return ret;
+  return h(type, props || emptyObj, children) as unknown as VElement<P>;
 }
 
 function elem(tagName: string, init: InitFunc<{}, {}>): Component;
@@ -278,12 +277,15 @@ function defineComponent(
 
   registerComponent(componentClass, tagName);
 
-  return componentClass;
+  return Object.assign(createElement.bind(null, tagName), { tagName });
 }
 
 // --- helpers -------------------------------------------------------
 
-function registerComponent(componentClass: Component, tagName: string) {
+function registerComponent(
+  componentClass: CustomElementConstructor,
+  tagName: string
+) {
   if (customElements.get(tagName)) {
     console.clear();
     console.log(`Custom element "${tagName}" already defined -> reloading...`);
@@ -294,21 +296,11 @@ function registerComponent(componentClass: Component, tagName: string) {
     }, 1000);
   }
 
-  customElements.define(tagName, componentClass);
+  customElements.define(tagName, componentClass as any); // TODO!!!!!!
 }
 
 function hasOwn(subj: any, propName: string) {
   return subj != null && Object.prototype.hasOwnProperty.call(subj, propName);
-}
-
-function setProp(subj: any, name: string, value: any): void {
-  const type = typeof subj;
-
-  if (subj !== null && (type === 'object' || type === 'function')) {
-    Object.defineProperty(subj, name, {
-      value
-    });
-  }
 }
 
 function getDefaultProps(propsDef: PropsDef): Props {
@@ -424,6 +416,10 @@ class BaseComponent extends HTMLElement {
         },
 
         set(value: unknown) {
+          if (value === undefined && hasOwn(this.#defaultProps, key)) {
+            value = this.#defaultProps[key];
+          }
+
           this.#props[key] = value;
           this.#update();
         }

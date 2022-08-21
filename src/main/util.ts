@@ -1,4 +1,4 @@
-import type { RefObject, Component } from 'novo-ui';
+import type { Component, ElementOf, Methods, Props, RefObject } from 'novo-ui';
 
 // === exports =======================================================
 
@@ -10,9 +10,9 @@ function createRef<T>(value: T | null = null): RefObject<T> {
   return { value };
 }
 
-function createRefFor<T extends object>(
-  component: Component<{ ref: RefObject<T> }>
-): RefObject<T> {
+function createRefFor<C extends Component>(
+  component: C
+): RefObject<ElementOf<C>> {
   return createRef();
 }
 

@@ -1,10 +1,4 @@
-import {
-  intercept,
-  Ref,
-  RefObject,
-  ComponentInstance,
-  ComponentCtrl
-} from 'novo-ui';
+import { intercept, Ref, RefObject, ComponentCtrl } from 'novo-ui';
 import { combineStyles } from 'novo-ui/util';
 
 // === types =========================================================
@@ -91,8 +85,8 @@ intercept({
 
 // --- setMethods ----------------------------------------------------
 
-function setMethods<M extends Methods>(
-  self: ComponentInstance<any, M>,
+function setMethods<E extends HTMLElement & M, M extends Methods>(
+  self: E,
   methods: M
 ) {
   if (self !== getCtrl().getElement()) {
