@@ -1,15 +1,19 @@
 import { widget } from 'novo-ui';
-import { makeAutoObservable, runInAction } from 'mobx';
+import { makeAutoObservable } from 'mobx';
 import { makeWidgetsReactive } from 'novo-ui/reactive';
 
 export { DurationDemo };
 
 const store = makeAutoObservable({
-  count: 0
+  count: 0,
+
+  increment() {
+    this.count++;
+  }
 });
 
 setInterval(() => {
-  runInAction(() => ++store.count);
+  store.increment();
 }, 1000);
 
 makeWidgetsReactive();
