@@ -1,4 +1,4 @@
-import { createElement, widget } from 'novo-ui';
+import { widget } from 'novo-ui';
 import { action, makeAutoObservable } from 'mobx';
 import { makeWidgetsReactive } from 'novo-ui/reactive';
 

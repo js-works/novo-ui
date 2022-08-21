@@ -1,5 +1,4 @@
-/** @jsx createElement */
-import { createElement, methods, opt, props, widget } from 'novo-ui';
+import { methods, opt, props, widget } from 'novo-ui';
 import { setMethods, setStyles, state, ticker } from 'novo-ui/ext';
 import { css, createElemRef } from 'novo-ui/util';
 

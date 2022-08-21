@@ -1,4 +1,3 @@
-/** @jsx createElement */
 import { createElement, render } from 'novo-ui';
 import type { VNode } from 'novo-ui';
 import { CounterDemo } from './demos/counter-demo';

@@ -1,5 +1,4 @@
-/** @jsx createElement */
-import { createElement, widget } from 'novo-ui';
+import { widget } from 'novo-ui';
 import { ticker } from 'novo-ui/ext';
 
 export { ClockDemo };

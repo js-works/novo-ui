@@ -4,8 +4,8 @@
     [
       "@babel/plugin-transform-react-jsx",
       {
-        "runtime": "classic",
-        "pragma": "createElement"
+        "runtime": "automatic",
+        "importSource": "novo-ui"
       }
     ]
   ]
