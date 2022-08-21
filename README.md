@@ -1,6 +1,6 @@
 # novo-ui
 
-A R&D project to evaluate a special web component API for developing browser-based UIs, using an alternative to hook functions, called "extensions".
+A R&D project to evaluate a special web widget API for developing browser-based UIs, using an alternative to hook functions, called "extensions".
 <br />
 The main advantages of the new API (= using "extensions" instead of "hooks") are:
 
@@ -27,7 +27,7 @@ yarn storybook
 
 Remark: We are using the following naming convention to
 reduce the amount of noise in the source code (for non-trivial
-components, where you access the props and the state object
+widgets, where you access the props and the state object
 very often, that makes quite a difference):
 
 - `c` is the variable for the custom element instance
@@ -36,10 +36,10 @@ very often, that makes quite a difference):
 ### Clock - showing the current time, updating every second
 
 ```tsx
-import { elem, render } from 'novo-ui';
+import { render, widget } from 'novo-ui';
 import { ticker } from 'novo-ui/ext';
 
-const Clock = elem('demo-clock', () => {
+const Clock = widget('demo-clock', () => {
   const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
@@ -55,10 +55,10 @@ render(<Clock />, '#app');
 ### Simple counter
 
 ```tsx
-import { elem, opt, props, render } from 'novo-ui';
+import { opt, props, render, widget } from 'novo-ui';
 import { state } from 'novo-ui/ext';
 
-const Counter = elem('demo-counter')(
+const Counter = widget('demo-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -80,10 +80,10 @@ render(<Counter />, '#app');
 ### Another counter using a bit more of the API
 
 ```tsx
-import { elem, methods, opt, props } from 'novo-ui';
+import { methods, opt, props, widget } from 'novo-ui';
 import { effect, setMethods, state } from 'novo-ui/ext';
 
-export const Counter = elem('demo-counter')(
+export const Counter = widget('demo-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')

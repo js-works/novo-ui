@@ -1,9 +1,18 @@
 /** @jsx createElement */
-import { createElement, elem, methods, opt, props, render, req } from 'novo-ui';
+import {
+  createElement,
+  methods,
+  opt,
+  props,
+  render,
+  req,
+  widget
+} from 'novo-ui';
+
 import type { ElementOf, VNode } from 'novo-ui';
 import { setMethods, setStyles, state, ticker } from 'novo-ui/ext';
 import { css, createElemRef } from 'novo-ui/util';
-import { makeComponentsReactive } from 'novo-ui/reactive';
+import { makeWidgetsReactive } from 'novo-ui/reactive';
 import { makeAutoObservable } from 'mobx';
 
 export default {
@@ -23,7 +32,7 @@ const store = makeAutoObservable({
   }
 });
 
-makeComponentsReactive();
+makeWidgetsReactive();
 setInterval(() => store.increment(), 1000);
 
 function demo(content: VNode) {
@@ -47,7 +56,7 @@ const counterDemoStyles = css`
   }
 `;
 
-const ClockDemo = elem('x-clock-demo', () => {
+const ClockDemo = widget('x-clock-demo', () => {
   const getTime = ticker((date) => date.toLocaleTimeString());
 
   return () => (
@@ -57,7 +66,7 @@ const ClockDemo = elem('x-clock-demo', () => {
   );
 });
 
-const Counter = elem('x-counter')(
+const Counter = widget('x-counter')(
   props({
     initialCount: opt(0),
     label: opt('Counter')
@@ -89,7 +98,7 @@ const Counter = elem('x-counter')(
   );
 });
 
-const CounterDemo = elem('x-counter-demo', () => {
+const CounterDemo = widget('x-counter-demo', () => {
   const counterRef = createElemRef<typeof Counter>();
   const increment = () => counterRef.value!.increment();
   const decrement = () => counterRef.value!.decrement();
@@ -109,6 +118,6 @@ const CounterDemo = elem('x-counter-demo', () => {
   );
 });
 
-const DurationDemo = elem('x-duration-demo', () => {
+const DurationDemo = widget('x-duration-demo', () => {
   return () => <div>Duration: {store.count}s</div>;
 });

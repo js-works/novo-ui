@@ -2,11 +2,11 @@ import { h, patch, text } from './internal/vdom';
 
 // === exports =======================================================
 
-export { createElement, elem, intercept, methods, opt, props, render, req };
+export { createElement, intercept, methods, opt, props, render, req, widget };
 
 export type {
-  Component,
-  ComponentCtrl,
+  Widget,
+  WidgetCtrl,
   ElementOf,
   Props,
   Methods,
@@ -29,16 +29,16 @@ type RefObject<T> = { value: T | null };
 type RefCallback<T> = (value: T | null) => void;
 type Ref<T> = RefObject<T> | RefCallback<T>;
 
-type ElementOf<T extends Component> = T extends Component<infer P, infer M>
+type ElementOf<T extends Widget> = T extends Widget<infer P, infer M>
   ? HTMLElement & P & M
   : never;
 
-type Component<P extends Props = Props, M extends Methods = Props> = {
+type Widget<P extends Props = Props, M extends Methods = Props> = {
   tagName: string;
   (props: P, ...children: VNode[]): VElement<P>;
 };
 
-type ComponentCtrl = {
+type WidgetCtrl = {
   getElement(): HTMLElement;
   update(): void;
   afterMount: (task: () => void) => void;
@@ -119,26 +119,22 @@ let onCreateElement:
 let onInit: (
   next: () => void, //
   id: string,
-  ctrl: ComponentCtrl
+  ctrl: WidgetCtrl
 ) => void = (next) => next();
 
 let onRender: (
   next: () => void, //
   id: string,
-  ctrl: ComponentCtrl | null
+  ctrl: WidgetCtrl | null
 ) => void = (next) => next();
 
 // === exported functions ============================================
 
 function intercept(params: {
-  onCreateElement?(
-    next: () => void,
-    type: string | Component,
-    props: Props
-  ): void;
+  onCreateElement?(next: () => void, type: string | Widget, props: Props): void;
 
-  onInit?(next: () => void, id: string, ctrl: ComponentCtrl): void;
-  onRender?(next: () => void, id: string, ctrl: ComponentCtrl | null): void;
+  onInit?(next: () => void, id: string, ctrl: WidgetCtrl): void;
+  onRender?(next: () => void, id: string, ctrl: WidgetCtrl | null): void;
 }) {
   if (params.onCreateElement) {
     // TODO
@@ -162,7 +158,7 @@ function intercept(params: {
 }
 
 function createElement<P extends Props>(
-  type: string | Component<P>,
+  type: string | Widget<P>,
   props: P,
   ...children: VNode[]
 ): VElement<P> {
@@ -193,32 +189,32 @@ function createElement<P extends Props>(
   return h(type, props || emptyObj, children) as unknown as VElement<P>;
 }
 
-function elem(tagName: string, init: InitFunc<{}, {}>): Component;
+function widget(tagName: string, init: InitFunc<{}, {}>): Widget;
 
-function elem(tagName: string): {
+function widget(tagName: string): {
   <P extends PropsDef>(propsConfig: PropsConfig<P>): (
     init: InitFunc<P, {}>
-  ) => Component<PropsType<P>, {}>;
+  ) => Widget<PropsType<P>, {}>;
 
   <M extends Methods>(getMethodsConfig: () => MethodsConfig<M>): (
     init: InitFunc<{}, M>
-  ) => Component<{}, M>;
+  ) => Widget<{}, M>;
 
   <P extends PropsDef, M extends Methods>(
     propsConfig: PropsConfig<P>,
     getMethodsConfig: () => MethodsConfig<M>
-  ): (init: InitFunc<P, M>) => Component<PropsType<P>, M>;
+  ): (init: InitFunc<P, M>) => Widget<PropsType<P>, M>;
 };
 
-function elem(tagName: string, arg?: any): any {
+function widget(tagName: string, arg?: any): any {
   if (typeof arg === 'function') {
-    return defineComponent(tagName, emptyObj, arg);
+    return defineWidget(tagName, emptyObj, arg);
   }
 
   return (arg1: any, arg2?: any) => {
     const propsDef = arg1.type === 'propsConfig' ? arg1.propsDef : null;
 
-    return (init: InitFunc) => defineComponent(tagName, propsDef, init);
+    return (init: InitFunc) => defineWidget(tagName, propsDef, init);
   };
 }
 
@@ -262,12 +258,12 @@ function opt(defaultValue?: any): any {
 
 // === locals ========================================================
 
-function defineComponent(
+function defineWidget(
   tagName: string,
   propsDef: PropsDef | null,
   init: InitFunc
-): Component {
-  const componentClass = class Component extends BaseComponent {
+): Widget {
+  const widgetClass = class Widget extends BaseWidget {
     static tagName = tagName;
 
     constructor() {
@@ -275,15 +271,15 @@ function defineComponent(
     }
   };
 
-  registerComponent(componentClass, tagName);
+  registerWidget(widgetClass, tagName);
 
   return Object.assign(createElement.bind(null, tagName), { tagName });
 }
 
 // --- helpers -------------------------------------------------------
 
-function registerComponent(
-  componentClass: CustomElementConstructor,
+function registerWidget(
+  widgetClass: CustomElementConstructor,
   tagName: string
 ) {
   if (customElements.get(tagName)) {
@@ -296,7 +292,7 @@ function registerComponent(
     }, 1000);
   }
 
-  customElements.define(tagName, componentClass as any); // TODO!!!!!!
+  customElements.define(tagName, widgetClass as any); // TODO!!!!!!
 }
 
 function hasOwn(subj: any, propName: string) {
@@ -315,17 +311,17 @@ function getDefaultProps(propsDef: PropsDef): Props {
   return ret;
 }
 
-// --- BaseComponent ----------------------------------------------------
+// --- BaseWidget ----------------------------------------------------
 
-class BaseComponent extends HTMLElement {
+class BaseWidget extends HTMLElement {
   static #nextId = 0;
 
   #initialized = false;
   #mounted = false;
   #stylesElem: HTMLSpanElement;
   #contentElem: HTMLSpanElement;
-  #ctrl: ComponentCtrl;
-  #id = Date.now() + '-' + BaseComponent.#nextId++;
+  #ctrl: WidgetCtrl;
+  #id = Date.now() + '-' + BaseWidget.#nextId++;
   #init: InitFunc;
   #render!: () => VNode;
   #props: Props = {};
@@ -392,7 +388,7 @@ class BaseComponent extends HTMLElement {
       beforeUnmount: (action) => this.#lifecycle.beforeUnmount.push(action)
     };
 
-    BaseComponent.#nextId = BaseComponent.#nextId % 200000000;
+    BaseWidget.#nextId = BaseWidget.#nextId % 200000000;
 
     this.attachShadow({ mode: 'open' });
     this.#stylesElem = document.createElement('span');

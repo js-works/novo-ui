@@ -1,4 +1,4 @@
-import { intercept, Ref, RefObject, ComponentCtrl } from 'novo-ui';
+import { intercept, Ref, RefObject, WidgetCtrl } from 'novo-ui';
 import { combineStyles } from 'novo-ui/util';
 
 // === types =========================================================
@@ -58,13 +58,13 @@ type StateObjSetter<T extends Record<string, any>> = {
 
 // === local data ====================================================
 
-let currCtrl: ComponentCtrl | null = null;
+let currCtrl: WidgetCtrl | null = null;
 
 // === interception logic ============================================
 
 function getCtrl() {
   if (!currCtrl) {
-    throw Error('Extension has been called outside of Component function');
+    throw Error('Extension has been called outside of Widget function');
   }
 
   return currCtrl;
@@ -530,7 +530,7 @@ class Host implements ReactiveControllerHost {
   #update: () => void;
   #controllers = new Set<ReactiveController>();
 
-  constructor(ctrl: ComponentCtrl) {
+  constructor(ctrl: WidgetCtrl) {
     this.#update = () => ctrl.update();
 
     ctrl.afterMount(() => {

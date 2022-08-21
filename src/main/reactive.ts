@@ -3,20 +3,20 @@ import { intercept } from 'novo-ui';
 
 // === exports =======================================================
 
-export { makeComponentsReactive };
+export { makeWidgetsReactive };
 
 // === local data ====================================================
 
-let componentsAreReactive = false;
+let widgetsAreReactive = false;
 
 // === exported functions ============================================
 
-function makeComponentsReactive() {
-  if (componentsAreReactive) {
+function makeWidgetsReactive() {
+  if (widgetsAreReactive) {
     return;
   }
 
-  componentsAreReactive = true;
+  widgetsAreReactive = true;
   const reactionsById: Record<string, Reaction> = {};
 
   intercept({
