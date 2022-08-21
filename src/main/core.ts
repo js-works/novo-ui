@@ -103,6 +103,7 @@ type MethodsConfig<M extends Methods> = {
 
 // === local data ====================================================
 
+const emptyArr: any[] = [];
 const emptyObj = {};
 const noop = () => {};
 const optDef = Object.freeze({ required: false });
@@ -112,7 +113,7 @@ let onCreateElement:
   | ((
       next: () => void, //
       type: string | Function,
-      props: Props
+      props: Props | null
     ) => void)
   | null = null;
 
@@ -159,7 +160,7 @@ function intercept(params: {
 
 function createElement<P extends Props>(
   type: string | Widget<P>,
-  props: P,
+  props?: P,
   ...children: VNode[]
 ): VElement<P> {
   if (typeof type !== 'string') {
@@ -189,7 +190,7 @@ function createElement<P extends Props>(
   return h(type, props || emptyObj, children) as unknown as VElement<P>;
 }
 
-function widget(tagName: string, init: InitFunc<{}, {}>): Widget;
+function widget(tagName: string, init: InitFunc<{}, {}>): Widget<{}, {}>;
 
 function widget(tagName: string): {
   <P extends PropsDef>(propsConfig: PropsConfig<P>): (
@@ -267,7 +268,11 @@ function defineWidget(
     static tagName = tagName;
 
     constructor() {
-      super(propsDef || emptyObj, init);
+      if (propsDef) {
+        super(Object.keys(propsDef), getDefaultProps(propsDef), init);
+      } else {
+        super(emptyArr, emptyObj, init);
+      }
     }
   };
 
@@ -324,8 +329,6 @@ class BaseWidget extends HTMLElement {
   #id = Date.now() + '-' + BaseWidget.#nextId++;
   #init: InitFunc;
   #render!: () => VNode;
-  #props: Props = {};
-  #defaultProps: Props;
   #updateRequested = false;
 
   #patch = () => {
@@ -375,7 +378,7 @@ class BaseWidget extends HTMLElement {
     }
   };
 
-  constructor(propsDef: PropsDef, init: InitFunc) {
+  constructor(propNames: string[], defaultProps: Props, init: InitFunc) {
     super();
     this.#init = init;
 
@@ -396,27 +399,24 @@ class BaseWidget extends HTMLElement {
     this.#contentElem = document.createElement('span');
     this.#contentElem.setAttribute('role', 'content');
     this.shadowRoot!.append(this.#stylesElem, this.#contentElem);
-    this.#defaultProps = getDefaultProps(propsDef);
-    this.#props = { ...this.#defaultProps };
 
-    for (const key of Object.keys(propsDef)) {
-      const propDef = propsDef[key];
+    for (const key of propNames) {
+      let value: unknown;
 
-      if (hasOwn(propDef, 'defaultValue')) {
-        this.#props[key] = (propDef as any).defaultValue;
+      if (hasOwn(defaultProps, key)) {
+        value = defaultProps[key];
       }
 
       Object.defineProperty(this, key, {
-        get() {
-          return this.#props[key];
-        },
+        get: () => value,
 
-        set(value: unknown) {
-          if (value === undefined && hasOwn(this.#defaultProps, key)) {
-            value = this.#defaultProps[key];
+        set(newValue: unknown) {
+          if (newValue === undefined && hasOwn(defaultProps, key)) {
+            value = defaultProps[key];
+          } else {
+            value = newValue;
           }
 
-          this.#props[key] = value;
           this.#update();
         }
       });
