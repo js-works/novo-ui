@@ -2,7 +2,7 @@
 import { createElement, elem, methods, opt, props, render, req } from 'novo-ui';
 import type { ElementOf, VNode } from 'novo-ui';
 import { setMethods, setStyles, state, ticker } from 'novo-ui/ext';
-import { css, createRef } from 'novo-ui/util';
+import { css, createElemRef } from 'novo-ui/util';
 import { makeComponentsReactive } from 'novo-ui/reactive';
 import { makeAutoObservable } from 'mobx';
 
@@ -90,7 +90,7 @@ const Counter = elem('x-counter')(
 });
 
 const CounterDemo = elem('x-counter-demo', () => {
-  const counterRef = createRef<ElementOf<typeof Counter>>();
+  const counterRef = createElemRef<typeof Counter>();
   const increment = () => counterRef.value!.increment();
   const decrement = () => counterRef.value!.decrement();
   const reset = () => counterRef.value!.reset();

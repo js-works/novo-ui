@@ -2,7 +2,7 @@ import type { Component, ElementOf, Methods, Props, RefObject } from 'novo-ui';
 
 // === exports =======================================================
 
-export { classes, combineStyles, createRef, createRefFor, css };
+export { classes, combineStyles, createRef, createElemRef, css };
 
 // === exported functions ============================================
 
@@ -10,9 +10,10 @@ function createRef<T>(value: T | null = null): RefObject<T> {
   return { value };
 }
 
-function createRefFor<C extends Component>(
-  component: C
-): RefObject<ElementOf<C>> {
+function createElemRef<T extends HTMLElement>(): RefObject<T>;
+function createElemRef<C extends Component>(): RefObject<ElementOf<C>>;
+
+function createElemRef() {
   return createRef();
 }
 
