@@ -1,5 +1,5 @@
-import { methods, opt, props, widget } from 'novo-ui';
-import { setMethods, setStyles, state, ticker } from 'novo-ui/ext';
+import { methods, opt, props, req, widget } from 'novo-ui';
+import { setMethods, setStyles, state } from 'novo-ui/ext';
 import { css, createElemRef } from 'novo-ui/util';
 
 export { CounterDemo };
@@ -20,8 +20,8 @@ const counterDemoStyles = css`
 
 const Counter = widget('x-counter')(
   props({
-    initialCount: opt(0),
-    label: opt('Counter')
+    name: req<string>,
+    initialCount: opt(0)
   }),
 
   methods<{
@@ -44,7 +44,7 @@ const Counter = widget('x-counter')(
   return () => (
     <div>
       <button onclick={increment}>
-        {c.label}: {s.count}
+        {c.name}: {s.count}
       </button>
     </div>
   );
@@ -60,7 +60,7 @@ const CounterDemo = widget('x-counter-demo', () => {
 
   return () => (
     <div>
-      <Counter ref={counterRef} />
+      <Counter name="Items count" ref={counterRef} />
       <div>
         <button onclick={increment}>Increment</button>
         <button onclick={decrement}>Decrement</button>

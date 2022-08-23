@@ -160,7 +160,7 @@ function intercept(params: {
 
 function createElement<P extends Props>(
   type: string | Widget<P>,
-  props?: P,
+  props?: P | null,
   ...children: VNode[]
 ): VElement<P> {
   if (typeof type !== 'string') {
@@ -238,8 +238,30 @@ function render(what: VNode, where: string | HTMLElement) {
   patch(target.firstChild, what);
 }
 
-function props<P extends PropsDef>(propsDef: P): PropsConfig<P> {
-  return { type: 'propsConfig', propsDef: propsDef };
+function props<P extends Record<string, PropDef<any> | (() => PropDef<any>)>>(
+  definition: P
+): PropsConfig<{
+  [K in keyof P]: P[K] extends () => PropDef<any>
+    ? ReturnType<P[K]>
+    : P[K] extends PropDef<any>
+    ? P[K]
+    : never;
+}> {
+  const propsDef: PropsDef = {};
+
+  for (const key of Object.keys(definition)) {
+    const value =
+      typeof definition[key] === 'function'
+        ? (definition[key] as Function)()
+        : definition[key];
+
+    propsDef[key] = value;
+  }
+
+  return {
+    type: 'propsConfig',
+    propsDef: propsDef as any
+  };
 }
 
 function methods<M extends Methods>(): MethodsConfig<M> {

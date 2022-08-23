@@ -1,4 +1,4 @@
-import type { ElementOf, RefObject, Widget } from 'novo-ui';
+import type { ElementOf, RefObject, Props, Methods, Widget } from 'novo-ui';
 
 // === exports =======================================================
 
@@ -11,7 +11,7 @@ function createRef<T>(value: T | null = null): RefObject<T> {
 }
 
 function createElemRef<T extends HTMLElement>(): RefObject<T>;
-function createElemRef<C extends Widget>(): RefObject<ElementOf<C>>;
+function createElemRef<C extends Widget<any, any>>(): RefObject<ElementOf<C>>;
 
 function createElemRef() {
   return createRef();
