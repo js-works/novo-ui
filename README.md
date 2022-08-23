@@ -80,7 +80,7 @@ render(<Counter />, '#app');
 ### Another counter using a bit more of the API
 
 ```tsx
-import { methods, opt, props, widget } from 'novo-ui';
+import { methods, opt, props, req, widget } from 'novo-ui';
 import { effect, setMethods, state } from 'novo-ui/ext';
 
 export const Counter = widget('demo-counter')(
