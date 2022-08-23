@@ -85,8 +85,8 @@ import { effect, setMethods, state } from 'novo-ui/ext';
 
 export const Counter = widget('demo-counter')(
   props({
-    initialCount: opt(0),
-    label: opt('Counter')
+    name: req<string>,
+    initialCount: opt(0)
   }),
 
   methods<{
@@ -111,7 +111,7 @@ export const Counter = widget('demo-counter')(
 
   return () => (
     <button onclick={increment}>
-      {c.label}: {s.count}
+      {c.name}: {s.count}
     </button>
   );
 });
