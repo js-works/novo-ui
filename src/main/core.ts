@@ -49,9 +49,15 @@ type WidgetCtrl = {
 
 // === local types ===================================================
 
-type InitFunc<P extends PropsDef = PropsDef, M extends Methods = Methods> = (
-  self: HTMLElement & PropsType2<P> & M
-) => () => VNode;
+type InitFunc<
+  P extends PropsDef | null = PropsDef,
+  M extends Methods = Methods
+> = P extends null
+  ? (self: HTMLElement & M) => () => VNode
+  : (
+      props: PropsType2<Exclude<P, null>>,
+      self: HTMLElement & PropsType2<Exclude<P, null>> & M
+    ) => () => VNode;
 
 type PropDefReq<T> = { required: true };
 type PropDefOpt<T> = { required: false; defaultValue: never };
@@ -190,7 +196,7 @@ function createElement<P extends Props>(
   return h(type, props || emptyObj, children) as unknown as VElement<P>;
 }
 
-function widget(tagName: string, init: InitFunc<{}, {}>): Widget<{}, {}>;
+function widget(tagName: string, init: InitFunc<null, {}>): Widget<{}, {}>;
 
 function widget(tagName: string): {
   <P extends PropsDef>(propsConfig: PropsConfig<P>): (
@@ -198,7 +204,7 @@ function widget(tagName: string): {
   ) => Widget<PropsType<P>, {}>;
 
   <M extends Methods>(getMethodsConfig: () => MethodsConfig<M>): (
-    init: InitFunc<{}, M>
+    init: InitFunc<null, M>
   ) => Widget<{}, M>;
 
   <P extends PropsDef, M extends Methods>(
@@ -349,6 +355,7 @@ class BaseWidget extends HTMLElement {
   #contentElem: HTMLSpanElement;
   #ctrl: WidgetCtrl;
   #id = Date.now() + '-' + BaseWidget.#nextId++;
+  #props: Props | null;
   #init: InitFunc;
   #render!: () => VNode;
   #updateRequested = false;
@@ -400,7 +407,7 @@ class BaseWidget extends HTMLElement {
     }
   };
 
-  constructor(propNames: string[], defaultProps: Props, init: InitFunc) {
+  constructor(propNames: string[] | null, defaultProps: Props, init: InitFunc) {
     super();
     this.#init = init;
 
@@ -421,23 +428,17 @@ class BaseWidget extends HTMLElement {
     this.#contentElem = document.createElement('span');
     this.#contentElem.setAttribute('role', 'content');
     this.shadowRoot!.append(this.#stylesElem, this.#contentElem);
+    this.#props = propNames === null ? null : { ...defaultProps };
 
-    for (const key of propNames) {
-      let value: unknown;
-
-      if (hasOwn(defaultProps, key)) {
-        value = defaultProps[key];
-      }
-
+    for (const key of propNames || emptyArr) {
       Object.defineProperty(this, key, {
-        get: () => value,
+        get: () => this.#props![key],
 
         set(newValue: unknown) {
-          if (newValue === undefined && hasOwn(defaultProps, key)) {
-            value = defaultProps[key];
-          } else {
-            value = newValue;
-          }
+          this.#props[key] =
+            newValue === undefined && hasOwn(defaultProps, key)
+              ? defaultProps[key]
+              : newValue;
 
           this.#update();
         }
@@ -447,8 +448,10 @@ class BaseWidget extends HTMLElement {
 
   connectedCallback() {
     if (!this.#initialized) {
+      const args: any = this.#props === null ? [this] : [this.#props, this];
+
       onInit(
-        () => void (this.#render = this.#init(this as any)),
+        () => void (this.#render = this.#init.apply(null, args)),
         this.#id,
         this.#ctrl
       );

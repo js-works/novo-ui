@@ -30,8 +30,9 @@ reduce the amount of noise in the source code (for non-trivial
 widgets, where you access the props and the state object
 very often, that makes quite a difference):
 
-- `c` is the variable for the custom element instance
-- `s` is the variable for a state object
+- `p` is the variable for the props object
+- `s` is the variable for the state object
+- `self` is the variable for the custom element instance
 
 ### Clock - showing the current time, updating every second
 
@@ -63,13 +64,13 @@ const Counter = widget('demo-counter')(
     initialCount: opt(0),
     label: opt('Counter')
   })
-)((c) => {
-  const [s, set] = state({ count: c.initialCount });
+)((p) => {
+  const [s, set] = state({ count: p.initialCount });
   const increment = () => set.count((it) => it + 1);
 
   return () => (
     <button onclick={increment}>
-      {c.label}: {s.count}
+      {p.label}: {s.count}
     </button>
   );
 });
@@ -94,24 +95,24 @@ export const Counter = widget('demo-counter')(
     increment(): void;
     decrement(): void;
   }>
-)((c) => {
-  const [s, set] = state({ count: c.initialCount });
+)((p, self) => {
+  const [s, set] = state({ count: p.initialCount });
   const increment = () => set.count((it) => it + 1);
 
-  setMethods(c, {
-    reset: () => set.count(c.initialCount),
+  setMethods(self, {
+    reset: () => set.count(p.initialCount),
     increment: () => set.count((it) => it + 1),
     decrement: () => set.count((it) => it - 1)
   });
 
   effect(
-    () => console.log(`Value of "${c.label}": ${s.count})`),
+    () => console.log(`Value of "${p.name}": ${s.count})`),
     () => [s.count]
   );
 
   return () => (
     <button onclick={increment}>
-      {c.name}: {s.count}
+      {p.name}: {s.count}
     </button>
   );
 });

@@ -29,14 +29,14 @@ const Counter = widget('x-counter')(
     increment(): void;
     decrement(): void;
   }>
-)((c) => {
-  const [s, set] = state({ count: c.initialCount });
+)((p, self) => {
+  const [s, set] = state({ count: p.initialCount });
   const increment = () => set.count((it) => it + 1);
 
   setStyles(counterStyles);
 
-  setMethods(c, {
-    reset: () => set.count(c.initialCount),
+  setMethods(self, {
+    reset: () => set.count(p.initialCount),
     increment: () => set.count((it) => it + 1),
     decrement: () => set.count((it) => it - 1)
   });
@@ -44,13 +44,13 @@ const Counter = widget('x-counter')(
   return () => (
     <div>
       <button onclick={increment}>
-        {c.name}: {s.count}
+        {p.name}: {s.count}
       </button>
     </div>
   );
 });
 
-const CounterDemo = widget('x-counter-demo', () => {
+const CounterDemo = widget('x-counter-demo', (xxxxxxxxxxx) => {
   const counterRef = createElemRef<typeof Counter>();
   const increment = () => counterRef.value!.increment();
   const decrement = () => counterRef.value!.decrement();
